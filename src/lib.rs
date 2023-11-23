@@ -2,6 +2,8 @@ mod http;
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use crate::http::http_structs::{HttpResponse, HttpData};
     use crate::http::http_structs::HttpStatus::{Ok, IMATeapot};
     use crate::http::server::HttpServer;
@@ -24,10 +26,9 @@ mod tests {
         let server = HttpServer::new("0.0.0.0".to_owned(), "8443".to_owned(), Vec::new());
         let mut server = server.unwrap();
         server.get("/".to_owned(), |request| {
-            print!("{:#?}", request);
             let mut resp = HttpResponse::default();
-            resp.data = Some(HttpData::new(format!("{:#?}", request).into_bytes()));
-            println!("{:#?}", resp);
+            let image = fs::read("test2.jpg").unwrap();
+            resp.data = Some(HttpData::new(image));
             resp
         });
         server.run_loop().unwrap();
