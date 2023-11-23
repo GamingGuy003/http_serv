@@ -27,8 +27,21 @@ impl HttpServer {
             for handler in &self.handlers {
                 let mut path_matches = true;
                 let mut route_params = Vec::new();
+                let split_path = http_request.http_headers.path.split_once('?');
+
+                // split route and query params and parse query
+                let (route_params_unparsed, query_params): (String, Option<Vec<(String, String)>>) = match split_path {
+                    Some((rpu, qpu)) => {
+                        // parse query params
+                        (rpu.to_owned(), Some(http_request.query_params_from_string(qpu.to_owned())))
+                    }
+                    None => (http_request.http_headers.path.clone(), None),
+                };
+
+                http_request.query_params = query_params;
+
                 let mut handler_path = handler.1.split('/').collect::<Vec<&str>>();
-                let mut request_path = http_request.http_headers.path.split('/').collect::<Vec<&str>>();
+                let mut request_path = route_params_unparsed.split('/').collect::<Vec<&str>>();
                 handler_path.retain(|x| !x.is_empty());
                 request_path.retain(|x| !x.is_empty());
 
@@ -62,7 +75,7 @@ impl HttpServer {
     }
 
 
-    fn handle_closure(&self, stream: &mut TcpStream, mut request: &HttpRequest, exec: &Box<dyn Fn(&HttpRequest) -> HttpResponse>) -> std::io::Result<()> {
+    fn handle_closure(&self, stream: &mut TcpStream, request: &HttpRequest, exec: &Box<dyn Fn(&HttpRequest) -> HttpResponse>) -> std::io::Result<()> {
         let response = exec(request);
         stream.write_all(response.to_headers().join("\r\n").as_bytes())?;
         match response.data {

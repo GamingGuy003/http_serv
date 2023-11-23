@@ -33,12 +33,13 @@ pub struct HttpRequest {
     pub http_headers: HttpHeaders,
     pub extra_headers: Vec<(String, String)>,
     pub data: Option<HttpData>,
-    pub route_params: Option<Vec<(String, String)>>
+    pub route_params: Option<Vec<(String, String)>>,
+    pub query_params: Option<Vec<(String, String)>>,
 }
 
 impl HttpRequest {
-    pub fn new(http_headers: HttpHeaders, extra_headers: Vec<(String, String)>, data: Option<HttpData>, route_params: Option<Vec<(String, String)>>) -> Self {
-        Self { http_headers, extra_headers, data, route_params }
+    pub fn new(http_headers: HttpHeaders, extra_headers: Vec<(String, String)>, data: Option<HttpData>, route_params: Option<Vec<(String, String)>>, query_params: Option<Vec<(String, String)>>) -> Self {
+        Self { http_headers, extra_headers, data, route_params, query_params }
     }
 
     pub fn from_stream(stream: &mut TcpStream) -> Result<Self, std::io::Error> {
@@ -91,7 +92,19 @@ impl HttpRequest {
 
         Ok(Self::new(http_headers, extra_headers.iter().map(|(key, val)| {
             (key.to_owned().to_owned(), val.to_owned().to_owned())
-        }).collect::<Vec<(String, String)>>(), _data, None))
+        }).collect::<Vec<(String, String)>>(), _data, None, None))
+    }
+
+    pub fn query_params_from_string(&mut self, params: String) -> Vec<(String, String)>{
+        let split = params.split('&').collect::<Vec<&str>>();
+        let mut key_val = Vec::new();
+        for split_elem in split {
+            match split_elem.split_once('=') {
+                Some((key, val)) => key_val.push((key.to_owned(), val.to_owned())),
+                None => todo!(),
+            }
+        }
+        key_val
     }
 }
 
