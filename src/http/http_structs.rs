@@ -101,7 +101,7 @@ impl HttpRequest {
         for split_elem in split {
             match split_elem.split_once('=') {
                 Some((key, val)) => key_val.push((key.to_owned(), val.to_owned())),
-                None => todo!(),
+                None => println!("Invalid key - value pair for query {split_elem}"),
             }
         }
         key_val
