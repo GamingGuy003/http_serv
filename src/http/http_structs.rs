@@ -32,12 +32,13 @@ impl HttpHeaders {
 pub struct HttpRequest {
     pub http_headers: HttpHeaders,
     pub extra_headers: Vec<(String, String)>,
-    pub data: Option<HttpData>
+    pub data: Option<HttpData>,
+    pub route_params: Option<Vec<(String, String)>>
 }
 
 impl HttpRequest {
-    pub fn new(http_headers: HttpHeaders, extra_headers: Vec<(String, String)>, data: Option<HttpData>) -> Self {
-        Self { http_headers, extra_headers, data }
+    pub fn new(http_headers: HttpHeaders, extra_headers: Vec<(String, String)>, data: Option<HttpData>, route_params: Option<Vec<(String, String)>>) -> Self {
+        Self { http_headers, extra_headers, data, route_params }
     }
 
     pub fn from_stream(stream: &mut TcpStream) -> Result<Self, std::io::Error> {
@@ -90,7 +91,7 @@ impl HttpRequest {
 
         Ok(Self::new(http_headers, extra_headers.iter().map(|(key, val)| {
             (key.to_owned().to_owned(), val.to_owned().to_owned())
-        }).collect::<Vec<(String, String)>>(), _data))
+        }).collect::<Vec<(String, String)>>(), _data, None))
     }
 }
 

@@ -22,11 +22,37 @@ impl HttpServer {
         // accepts connection
         for stream in self.listener.incoming() {
             let mut stream = stream?;
-            let http_request = &HttpRequest::from_stream(&mut stream)?;
+            let mut http_request = HttpRequest::from_stream(&mut stream)?;
             // checks which function to run
             for handler in &self.handlers {
-                if handler.0 == http_request.http_headers.method && handler.1 == http_request.http_headers.path {
-                    self.handle_closure(&mut stream, http_request, &handler.2)?;
+                let mut path_matches = true;
+                let mut route_params = Vec::new();
+                let handler_path = handler.1.split('/').collect::<Vec<&str>>();
+                let request_path = http_request.http_headers.path.split('/').collect::<Vec<&str>>();
+
+                // if different amount of elements, paths will never match anyways so we skip
+                if handler_path.len() != request_path.len() {
+                    continue;
+                }
+
+                for (handler_element, request_element) in handler_path.iter().zip(request_path.iter()) {
+                    if handler_element.starts_with(':') {
+                        route_params.push((handler_element.to_owned().to_owned(), request_element.to_owned().to_owned()));
+                        continue;
+                    }
+                    if handler_element != request_element {
+                        path_matches = false;
+                        break;
+                    }
+                }
+
+                // if there are parameters, add them to the request
+                if !route_params.is_empty() {
+                    http_request.route_params = Some(route_params);
+                }
+
+                if handler.0 == http_request.http_headers.method && path_matches {
+                    self.handle_closure(&mut stream, &http_request, &handler.2)?;
                 }
             }
         }
