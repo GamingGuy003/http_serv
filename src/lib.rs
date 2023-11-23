@@ -1,12 +1,9 @@
-mod http;
+pub mod http;
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use crate::http::http_structs::{HttpResponse, HttpData};
     use crate::http::http_structs::HttpStatus::{Ok, IMATeapot};
-    use crate::http::server::HttpServer;
 
     #[test]
     pub fn response_headers() {
