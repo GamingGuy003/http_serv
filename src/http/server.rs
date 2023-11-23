@@ -27,8 +27,10 @@ impl HttpServer {
             for handler in &self.handlers {
                 let mut path_matches = true;
                 let mut route_params = Vec::new();
-                let handler_path = handler.1.split('/').collect::<Vec<&str>>();
-                let request_path = http_request.http_headers.path.split('/').collect::<Vec<&str>>();
+                let mut handler_path = handler.1.split('/').collect::<Vec<&str>>();
+                let mut request_path = http_request.http_headers.path.split('/').collect::<Vec<&str>>();
+                handler_path.retain(|x| !x.is_empty());
+                request_path.retain(|x| !x.is_empty());
 
                 // if different amount of elements, paths will never match anyways so we skip
                 if handler_path.len() != request_path.len() {
