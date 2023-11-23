@@ -77,16 +77,13 @@ impl HttpRequest {
 
         // check if there is http data to be fetched
         for extra_header in &extra_headers {
-            match extra_header {
-                ("Content-Length", length) => {
-                    let length = length.parse().expect("Failed to parse Content-Length");
-                    let mut buffer = vec![0; length];
-                    match buf_reader.read_exact(&mut buffer) {
-                        Ok(_) => _data = Some(HttpData::new(buffer)),
-                        Err(err) => println!("Error reading request body: {err}"),
-                    }
-                },
-                (_, _) => {}
+            if let ("Content-Length", length) = extra_header {
+                let length = length.parse().expect("Failed to parse Content-Length");
+                let mut buffer = vec![0; length];
+                match buf_reader.read_exact(&mut buffer) {
+                    Ok(_) => _data = Some(HttpData::new(buffer)),
+                    Err(err) => println!("Error reading request body: {err}"),
+                }
             }
         }
 
@@ -116,13 +113,15 @@ pub struct HttpResponse {
     pub data: Option<HttpData>
 }
 
+impl Default for HttpResponse {
+    fn default() -> Self {
+        Self { http_ver: "1.1".to_string(), status: HttpStatus::Ok, extra_headers: None, data: None }
+    }
+}
+
 impl HttpResponse {
     pub fn new(http_ver: String, status: HttpStatus, extra_headers: Option<Vec<(String, String)>>, data: Option<HttpData>) -> Self {
         Self { http_ver, status, extra_headers, data }
-    }
-
-    pub fn default() -> Self {
-        Self { http_ver: "1.1".to_string(), status: HttpStatus::Ok, extra_headers: None, data: None }
     }
     
     pub fn to_headers(&self) -> Vec<String> {

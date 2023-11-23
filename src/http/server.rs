@@ -2,18 +2,20 @@ use std::{net::{TcpListener, TcpStream}, io::Write};
 
 use super::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 
+type HttpResponseFn = Box<dyn Fn(&HttpRequest) -> HttpResponse>;
+
 pub struct HttpServer {
     listener: TcpListener,
     // Method Path Closure
-    handlers: Vec<(HttpMethod, String, Box<dyn Fn(&HttpRequest) -> HttpResponse>)>,
+    handlers: Vec<(HttpMethod, String, HttpResponseFn)>,
 }
 
 impl HttpServer {
     pub fn new(
         addr: String,
         port: String,
-        handlers: Vec<(HttpMethod, String, Box<dyn Fn(&HttpRequest) -> HttpResponse>
-    )>) -> Result<Self, std::io::Error> {
+        handlers: Vec<(HttpMethod, String, HttpResponseFn)>
+    ) -> Result<Self, std::io::Error> {
         Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, handlers })
     }
 
@@ -75,7 +77,7 @@ impl HttpServer {
     }
 
 
-    fn handle_closure(&self, stream: &mut TcpStream, request: &HttpRequest, exec: &Box<dyn Fn(&HttpRequest) -> HttpResponse>) -> std::io::Result<()> {
+    fn handle_closure(&self, stream: &mut TcpStream, request: &HttpRequest, exec: &dyn Fn(&HttpRequest) -> HttpResponse) -> std::io::Result<()> {
         let response = exec(request);
         stream.write_all(response.to_headers().join("\r\n").as_bytes())?;
         match response.data {
