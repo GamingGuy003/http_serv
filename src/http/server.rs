@@ -22,8 +22,6 @@ impl HttpServer {
         // accepts connection
         for stream in self.listener.incoming() {
             let mut stream = stream?;
-            // incomming connection
-            println!("New connection from {}", stream.peer_addr().unwrap());
             let http_request = &HttpRequest::from_stream(&mut stream)?;
             // checks which function to run
             for handler in &self.handlers {
@@ -49,7 +47,16 @@ impl HttpServer {
         self.handlers.push((HttpMethod::GET, path, Box::from(exec)));
     }
 
+    pub fn put(&mut self, path: String, exec: fn(&HttpRequest) -> HttpResponse) {
+        self.handlers.push((HttpMethod::PUT, path, Box::from(exec)));
+    }
+
     pub fn post(&mut self, path: String, exec: fn(&HttpRequest) -> HttpResponse) {
         self.handlers.push((HttpMethod::POST, path, Box::from(exec)));
     }
+
+    pub fn delete(&mut self, path: String, exec: fn(&HttpRequest) -> HttpResponse) {
+        self.handlers.push((HttpMethod::DELETE, path, Box::from(exec)));
+    }
+
 }

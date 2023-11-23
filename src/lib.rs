@@ -20,17 +20,4 @@ mod tests {
         let response = HttpResponse::new("2".to_string(), IMATeapot, None, Some(data));
         assert_eq!(response.to_headers().join("\r\n"), String::from("HTTP/2 418 I'm a teapot\r\nContent-Length: 4\r\n\r\n"));
     }
-
-    #[test]
-    pub fn server_test() {
-        let server = HttpServer::new("0.0.0.0".to_owned(), "8443".to_owned(), Vec::new());
-        let mut server = server.unwrap();
-        server.get("/".to_owned(), |request| {
-            let mut resp = HttpResponse::default();
-            let image = fs::read("test2.jpg").unwrap();
-            resp.data = Some(HttpData::new(image));
-            resp
-        });
-        server.run_loop().unwrap();
-    }
 }
