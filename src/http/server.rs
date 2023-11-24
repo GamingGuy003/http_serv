@@ -38,7 +38,7 @@ impl HttpServer {
         #[cfg(feature = "num_cpus")]
         let threads = match threads {
             Some(threads) => threads,
-            None => num_cpus::get() as u32,
+            None => (num_cpus::get() as u32) * 3,
         };
         Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, threads, handlers })
     }
