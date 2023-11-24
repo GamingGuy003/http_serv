@@ -1,8 +1,16 @@
 [package]
 name = "http_serv"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+log = ["dep:pretty_env_logger", "dep:log", "dep:chrono"]
+
 [dependencies]
+chrono = { version = "0.4.31", optional = true }
+log = { version = "0.4.20", optional = true }
+pretty_env_logger = { version = "0.5.0", optional = true }
+

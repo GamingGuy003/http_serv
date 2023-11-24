@@ -2,6 +2,11 @@ use std::{net::{TcpListener, TcpStream}, io::Write};
 
 use super::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 
+#[cfg(feature = "log")]
+extern crate pretty_env_logger;
+#[cfg(feature = "log")]
+use chrono::Local;
+
 type HttpResponseFn = Box<dyn Fn(&HttpRequest) -> HttpResponse>;
 
 pub struct HttpServer {
@@ -24,6 +29,8 @@ impl HttpServer {
         // accepts connection
         for stream in self.listener.incoming() {
             let mut stream = stream?;
+            #[cfg(feature = "log")]
+            log::debug!("Connection from: {}", stream.peer_addr().expect("Could not resolve socket"));
             let mut http_request = HttpRequest::from_stream(&mut stream)?;
             // checks which function to run
             for handler in &self.handlers {
