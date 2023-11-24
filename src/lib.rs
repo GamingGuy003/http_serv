@@ -44,6 +44,6 @@ mod tests {
             resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
             resp
         });
-        server.run_loop();
+        let _ = server.run_loop();
     }
 }

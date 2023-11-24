@@ -142,13 +142,10 @@ impl HttpResponse {
             Some(data) => headers.push(data.to_header()),
             None => {}
         }
-        match self.extra_headers.clone() {
-            Some(extra_headers) => {
-                for extra_header in extra_headers {
-                    headers.push(format!("{}: {}", extra_header.0, extra_header.1))
-                }
-            },
-            None => {}
+        if let Some(extra_headers) = self.extra_headers.clone() {
+            for extra_header in extra_headers {
+                headers.push(format!("{}: {}", extra_header.0, extra_header.1))
+            }
         }
         
         headers.push("\r\n".to_string());
