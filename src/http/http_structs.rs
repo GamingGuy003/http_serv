@@ -58,8 +58,8 @@ impl HttpRequest {
                 }
                 Err(err) => {
                     #[cfg(feature = "log")]
-                    log::warn!("Failed to read from socket");
-                    return  Err(err)
+                    log::error!("Failed to read headers");
+                    return Err(err);
                 }, // Error reading line
             }
         }
@@ -77,7 +77,7 @@ impl HttpRequest {
                 Some((key , val )) => extra_headers.push((key.trim(), val.trim())),
                 None => {
                     #[cfg(feature = "log")]
-                    log::warn!("Invalid header {line}")
+                    log::warn!("Invalid header: {line}");
                 }
             }
         }
@@ -91,8 +91,8 @@ impl HttpRequest {
                     Ok(_) => _data = Some(HttpData::new(buffer)),
                     Err(err) => {
                         #[cfg(feature = "log")]
-                        log::warn!("Failed to read http body");
-                        return Err(err)
+                        log::error!("Error reading request body");
+                        return Err(err);
                     },
                 }
             }
@@ -109,10 +109,7 @@ impl HttpRequest {
         for split_elem in split {
             match split_elem.split_once('=') {
                 Some((key, val)) => key_val.push((key.to_owned(), val.to_owned())),
-                None => {
-                    #[cfg(feature = "log")]
-                    log::warn!("Invalid query {split_elem}");
-                },
+                None => println!("Invalid key - value pair for query {split_elem}"),
             }
         }
         key_val
