@@ -56,7 +56,11 @@ impl HttpRequest {
                     }
                     lines.push(line.trim().to_owned());
                 }
-                Err(err) => panic!("Failed reading from stream: {err}"), // Error reading line
+                Err(err) => {
+                    #[cfg(feature = "log")]
+                    log::warn!("Failed to read from socket");
+                    return  Err(err)
+                }, // Error reading line
             }
         }
         let mut lines = lines.iter();
@@ -71,7 +75,10 @@ impl HttpRequest {
             }
             match line.split_once(':') {
                 Some((key , val )) => extra_headers.push((key.trim(), val.trim())),
-                None => println!("Invalid header found: {line}")
+                None => {
+                    #[cfg(feature = "log")]
+                    log::warn!("Invalid header {line}")
+                }
             }
         }
 
@@ -82,7 +89,11 @@ impl HttpRequest {
                 let mut buffer = vec![0; length];
                 match buf_reader.read_exact(&mut buffer) {
                     Ok(_) => _data = Some(HttpData::new(buffer)),
-                    Err(err) => println!("Error reading request body: {err}"),
+                    Err(err) => {
+                        #[cfg(feature = "log")]
+                        log::warn!("Failed to read http body");
+                        return Err(err)
+                    },
                 }
             }
         }
@@ -98,7 +109,10 @@ impl HttpRequest {
         for split_elem in split {
             match split_elem.split_once('=') {
                 Some((key, val)) => key_val.push((key.to_owned(), val.to_owned())),
-                None => println!("Invalid key - value pair for query {split_elem}"),
+                None => {
+                    #[cfg(feature = "log")]
+                    log::warn!("Invalid query {split_elem}");
+                },
             }
         }
         key_val

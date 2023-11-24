@@ -1,11 +1,10 @@
 use std::{net::{TcpListener, TcpStream}, io::Write};
 
+
 use super::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 
 #[cfg(feature = "log")]
 extern crate pretty_env_logger;
-#[cfg(feature = "log")]
-use chrono::Local;
 
 type HttpResponseFn = Box<dyn Fn(&HttpRequest) -> HttpResponse>;
 
@@ -26,12 +25,14 @@ impl HttpServer {
 
     // main server loop that handles incomming connections
     pub fn run_loop(&self) -> std::io::Result<()> {
+        #[cfg(feature = "threading")]
+        let thread_pool = threadpool::ThreadPool::new(num_cpus::get() * 2);
         // accepts connection
         for stream in self.listener.incoming() {
             let mut stream = stream?;
-            #[cfg(feature = "log")]
-            log::debug!("Connection from: {}", stream.peer_addr().expect("Could not resolve socket"));
             let mut http_request = HttpRequest::from_stream(&mut stream)?;
+            #[cfg(feature = "log")]
+            log::info!("[{}] {}", stream.peer_addr().expect("Could not resolve socket"), http_request.http_headers.path);
             // checks which function to run
             for handler in &self.handlers {
                 let mut path_matches = true;
@@ -59,6 +60,7 @@ impl HttpServer {
                     continue;
                 }
 
+                // add params with : to vector, otherwhise compare if paths match
                 for (handler_element, request_element) in handler_path.iter().zip(request_path.iter()) {
                     if handler_element.starts_with(':') {
                         route_params.push((handler_element.to_owned().to_owned(), request_element.to_owned().to_owned()));
@@ -76,6 +78,15 @@ impl HttpServer {
                 }
 
                 if handler.0 == http_request.http_headers.method && path_matches {
+                    #[cfg(feature = "log")]
+                    log::trace!("Calling {} with {:#?}", handler.1, http_request.route_params.clone().unwrap_or_default());
+                    #[cfg(feature = "threading")]
+                    let exec = std::sync::Arc::new(std::sync::Mutex::new(&handler.2));
+                    #[cfg(feature = "threading")]
+                    thread_pool.execute(move|| {
+                        self.handle_closure(&mut stream, &http_request, &*exec.lock().unwrap());
+                    });
+                    #[cfg(not(feature = "threading"))]
                     self.handle_closure(&mut stream, &http_request, &handler.2)?;
                 }
             }
@@ -94,18 +105,26 @@ impl HttpServer {
     }
 
     pub fn get(&mut self, path: String, exec: fn(&HttpRequest) -> HttpResponse) {
+        #[cfg(feature = "log")]
+        log::debug!("Adding route {path}");
         self.handlers.push((HttpMethod::GET, path, Box::from(exec)));
     }
 
     pub fn put(&mut self, path: String, exec: fn(&HttpRequest) -> HttpResponse) {
+        #[cfg(feature = "log")]
+        log::debug!("Adding route {path}");
         self.handlers.push((HttpMethod::PUT, path, Box::from(exec)));
     }
 
     pub fn post(&mut self, path: String, exec: fn(&HttpRequest) -> HttpResponse) {
+        #[cfg(feature = "log")]
+        log::debug!("Adding route {path}");
         self.handlers.push((HttpMethod::POST, path, Box::from(exec)));
     }
 
     pub fn delete(&mut self, path: String, exec: fn(&HttpRequest) -> HttpResponse) {
+        #[cfg(feature = "log")]
+        log::debug!("Adding route {path}");
         self.handlers.push((HttpMethod::DELETE, path, Box::from(exec)));
     }
 

@@ -1,8 +1,5 @@
 pub mod http;
 
-#[cfg(feature = "log")]
-#[macro_use] extern crate log;
-
 #[cfg(test)]
 mod tests {
     use crate::http::http_structs::{HttpResponse, HttpData};
