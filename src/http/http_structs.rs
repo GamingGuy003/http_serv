@@ -1,4 +1,4 @@
-use std::{net::TcpStream, io::{BufReader, BufRead, Read}};
+use std::{net::TcpStream, io::{BufReader, BufRead, Read, Error}};
 
 #[derive(Debug, Clone)]
 pub struct HttpHeaders {
@@ -12,17 +12,40 @@ impl HttpHeaders {
         Self { method, path, protocol }
     }
 
-    pub fn from_line(headerline: String) -> Result<Self, std::io::Error> {
+    pub fn from_line(headerline: String) -> Result<Self, String> {
         let mut methodline = headerline.split(' ').collect::<Vec<&str>>();
         // resolve elements from header line
-        let protocol = methodline.pop().expect("Could not fetch protocol from headers");
-        let path = methodline.pop().expect("Could not fetch path from headers");
-        let method = match methodline.pop().expect("Could not fetch method from headers") {
-            "GET" => HttpMethod::GET,
-            "PUT" => HttpMethod::PUT,
-            "POST" => HttpMethod::POST,
-            "DELETE" => HttpMethod::DELETE,
-            meth_err => panic!("Failed to resolve method, got {meth_err}")
+        let protocol = match methodline.pop() {
+            Some(protocol) => protocol,
+            None => {
+                #[cfg(feature = "log")]
+                log::trace!("Could not fetch protocol from headers");
+                return Err(String::from("Could not fetch protocol from headers"))
+            }
+        };
+        let path = match methodline.pop() {
+            Some(path) => path,
+            None => {
+                #[cfg(feature = "log")]
+                log::trace!("Could not fetch path from headers");
+                return Err(String::from("Could not fetch path from headers"));
+            },
+        };
+        let method = match methodline.pop() {
+            Some("GET") => HttpMethod::GET,
+            Some("PUT") => HttpMethod::PUT,
+            Some("POST") => HttpMethod::POST,
+            Some("DELETE") => HttpMethod::DELETE,
+            Some(err) => {
+                #[cfg(feature = "log")]
+                log::trace!("Failed to fetch method, got: {err}");
+                return Err(format!("Failed to fetch method, got: {err}"));
+            },
+            None => {
+                #[cfg(feature = "log")]
+                log::trace!("Failed to build headers, got no method");
+                return Err(String::from("Failed to fetch method, got no method"));
+            }
         };
         Ok(Self::new(method, path.to_string(), protocol.to_string()))
     }
@@ -89,13 +112,20 @@ impl HttpRequest {
                 }
                 Err(err) => {
                     #[cfg(feature = "log")]
-                    log::error!("Failed to read headers: {err}");
+                    log::trace!("Error reading headers from stream: {err}");
                     return Err(err);
                 }, // Error reading line
             }
         }
         let mut lines = lines.iter();
-        let http_headers = HttpHeaders::from_line(lines.next().expect("Failed to get header line").clone())?;
+        let http_headers = match HttpHeaders::from_line(lines.next().unwrap_or(&String::new()).clone()) {
+            Ok(http_headers) => http_headers,
+            Err(err) => {
+                #[cfg(feature = "log")]
+                log::trace!("Failed to build headers: {err}");
+                return Err(Error::new(std::io::ErrorKind::InvalidData, err));
+            },
+        };
         let mut extra_headers = Vec::new();
         let mut _data = None;
 
@@ -122,7 +152,7 @@ impl HttpRequest {
                     Ok(_) => _data = Some(HttpData::new(buffer)),
                     Err(err) => {
                         #[cfg(feature = "log")]
-                        log::error!("Error reading request body");
+                        log::trace!("Error reading request body");
                         return Err(err);
                     },
                 }
@@ -140,7 +170,10 @@ impl HttpRequest {
         for split_elem in split {
             match split_elem.split_once('=') {
                 Some((key, val)) => key_val.push((key.to_owned(), val.to_owned())),
-                None => println!("Invalid key - value pair for query {split_elem}"),
+                None => {
+                    #[cfg(feature = "log")]
+                    log::warn!("Invalid query pair: {split_elem}");
+                },
             }
         }
         key_val
