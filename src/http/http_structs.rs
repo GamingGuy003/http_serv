@@ -1,6 +1,6 @@
 use std::{net::TcpStream, io::{BufReader, BufRead, Read}};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpHeaders {
     pub method: HttpMethod,
     pub path: String,
@@ -28,7 +28,7 @@ impl HttpHeaders {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpRequest {
     pub http_headers: HttpHeaders,
     pub extra_headers: Vec<(String, String)>,
@@ -224,7 +224,7 @@ impl HttpResponse {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum HttpMethod {
     POST,
     PUT,
@@ -300,7 +300,7 @@ pub enum HttpStatus {
     NetworkAuthenticationRequired, // 511
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpData {
     pub data: Vec<u8>
 }
