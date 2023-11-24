@@ -1,5 +1,7 @@
 use std::{net::TcpStream, io::{BufReader, BufRead, Read}};
 
+use num_enum::TryFromPrimitive;
+
 #[derive(Debug, Clone)]
 pub struct HttpHeaders {
     pub method: HttpMethod,
@@ -40,6 +42,37 @@ pub struct HttpRequest {
 impl HttpRequest {
     pub fn new(http_headers: HttpHeaders, extra_headers: Vec<(String, String)>, data: Option<HttpData>, route_params: Option<Vec<(String, String)>>, query_params: Option<Vec<(String, String)>>) -> Self {
         Self { http_headers, extra_headers, data, route_params, query_params }
+    }
+
+    pub fn get_extra_header(&self, header_name: String) -> Option<String> {
+        for header in self.extra_headers.clone() {
+            if header.0 == header_name {
+                return Some(header.0);
+            }
+        }
+        None
+    }
+
+    pub fn get_route_param(&self, param_name: String) -> Option<String> {
+        if let Some(route_params) = self.route_params.clone() {
+            for route_param in route_params {
+                if route_param.0 == param_name{
+                    return Some(route_param.0);
+                }
+            }
+        }
+        None
+    }
+
+    pub fn get_query_param(&self, param_name: String) -> Option<String> {
+        if let Some(query_params) = self.query_params.clone() {
+            for query_param in query_params {
+                if query_param.0 == param_name{
+                    return Some(query_param.0);
+                }
+            }
+        }
+        None
     }
 
     pub fn from_stream(stream: &mut TcpStream) -> Result<Self, std::io::Error> {
@@ -135,6 +168,17 @@ impl HttpResponse {
         Self { http_ver, status, extra_headers, data }
     }
     
+    pub fn get_extra_headers(&self, header_name: String) -> Option<String> {
+        if let Some(extra_headers) = self.extra_headers.clone() {
+            for header in extra_headers {
+                if header.0 == header_name {
+                    return Some(header.0);
+                }
+            }
+        }
+        None
+    }
+
     pub fn to_headers(&self) -> Vec<String> {
         let mut headers = Vec::new();
         headers.push(format!("HTTP/{} {}", self.http_ver, self.status_to_header()));
@@ -229,73 +273,74 @@ pub enum HttpMethod {
     DELETE
 }
 
-#[derive(Debug)]
+#[derive(Debug, num_enum::TryFromPrimitive)]
+#[repr(u64)]
 // Status codes + description from https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
 pub enum HttpStatus {
-    Continue, // 100
-    SwitchingProtocols, // 101
-    Processing, // 102
-    EarlyHints, // 103
-    Ok, //200
-    Created, // 201
-    Accepted, // 202
-    NonAuthorativeInformation, //203
-    NoContent, // 204
-    ResetContent, // 205
-    PartialContent, // 206
-    MultiStatus, // 207
-    AlreadyReported, // 208
-    IMUsed, // 226
-    MultipleChoices, // 300
-    MovedPermanently, // 301
-    Found, // 302
-    SeeOther, // 303
-    NotModified, // 304
-    UseProxy, // 305
-    Unused, // 306
-    TemporaryRedirect, // 307
-    PermanentRedirect, // 308
-    BadRequest, // 400
-    Unauthorized, // 401
-    PaymentRequired, // 402
-    Forbidden, // 403
-    NotFound, // 404
-    MethodNotAllowed, // 405
-    NotAcceptable, // 406
-    ProxyAuthenticationRequired, // 407
-    RequestTimeout, // 408
-    Conflict, // 409
-    Gone, // 410
-    LengthRequired, // 411
-    PreconditionFailed, // 412
-    PayloadTooLarge, // 413
-    URITooLong, // 414
-    UnsupportedMediaType, // 415
-    RangeNotSatisfiable, // 416
-    ExpectationFailed, // 417
-    IMATeapot, // 418
-    MisdirectedRequest, // 421
-    UnprocessableContent, // 422
-    Locked, // 423
-    FailedDependency, // 424
-    TooEarly, // 425
-    UpgradeRequired, // 426
-    PreconditionRequired, // 428
-    TooManyRequests, // 429
-    RequestsHeaderFieldsTooLarge, // 431
-    UnavailableForLegalReasons, // 451
-    InternalServerError, // 500
-    NotImplemented, // 501
-    BadGateway, // 502
-    ServiceUnavailable, // 503
-    GatewayTimeout, // 504
-    HTTPVersionNotSupported, // 505
-    VariantAlsoNegotiates, // 506
-    InsufficientStorage, // 507
-    LoopDetected, // 508
-    NotExtended, // 510
-    NetworkAuthenticationRequired, // 511
-}
+    Continue = 100,
+    SwitchingProtocols = 101,
+    Processing = 102,
+    EarlyHints = 103,
+    Ok = 200,
+    Created = 201,
+    Accepted = 202,
+    NonAuthorativeInformation = 203,
+    NoContent = 204,
+    ResetContent = 205,
+    PartialContent = 206,
+    MultiStatus = 207,
+    AlreadyReported = 208,
+    IMUsed = 226,
+    MultipleChoices = 300,
+    MovedPermanently = 301,
+    Found = 302,
+    SeeOther = 303,
+    NotModified = 304,
+    UseProxy = 305,
+    Unused = 306,
+    TemporaryRedirect = 307,
+    PermanentRedirect = 308,
+    BadRequest = 400,
+    Unauthorized = 401,
+    PaymentRequired = 402,
+    Forbidden = 403,
+    NotFound = 404,
+    MethodNotAllowed = 405,
+    NotAcceptable = 406,
+    ProxyAuthenticationRequired = 407,
+    RequestTimeout = 408,
+    Conflict = 409,
+    Gone = 410,
+    LengthRequired = 411,
+    PreconditionFailed = 412,
+    PayloadTooLarge = 413,
+    URITooLong = 414,
+    UnsupportedMediaType = 415,
+    RangeNotSatisfiable = 416,
+    ExpectationFailed = 417,
+    IMATeapot = 418,
+    MisdirectedRequest = 421,
+    UnprocessableContent = 422,
+    Locked = 423,
+    FailedDependency = 424,
+    TooEarly = 425,
+    UpgradeRequired = 426,
+    PreconditionRequired = 428,
+    TooManyRequests = 429,
+    RequestsHeaderFieldsTooLarge = 431,
+    UnavailableForLegalReasons = 451,
+    InternalServerError = 500,
+    NotImplemented = 501,
+    BadGateway = 502,
+    ServiceUnavailable = 503,
+    GatewayTimeout = 504,
+    HTTPVersionNotSupported = 505,
+    VariantAlsoNegotiates = 506,
+    InsufficientStorage = 507,
+    LoopDetected = 508,
+    NotExtended = 510,
+    NetworkAuthenticationRequired = 511,
+ }
 
 #[derive(Debug, Clone)]
 pub struct HttpData {
