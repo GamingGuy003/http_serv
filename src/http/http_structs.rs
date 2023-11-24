@@ -1,7 +1,5 @@
 use std::{net::TcpStream, io::{BufReader, BufRead, Read}};
 
-use num_enum::TryFromPrimitive;
-
 #[derive(Debug, Clone)]
 pub struct HttpHeaders {
     pub method: HttpMethod,
