@@ -47,41 +47,42 @@ impl HttpServer {
     // main server loop that handles incomming connections
     pub fn run_loop(&self) -> std::io::Result<()> {
         #[cfg(feature = "threading")]
-        let mut threadpool = scoped_threadpool::Pool::new(self.threads);
-        #[cfg(feature = "threading")]
-        threadpool.scoped(|scope| {
-            // accepts connection
-            for stream in self.listener.incoming() {
-                let mut stream = match stream {
-                    Ok(stream) => stream,
-                    Err(_err) => {
-                        #[cfg(feature = "log")]
-                        log::error!("Failed to get stream: {_err}");
-                        return;
-                    }
-                };
-                let http_request = match HttpRequest::from_stream(&mut stream) {
-                    Ok(http_request) => http_request,
-                    Err(_err) => {
-                        #[cfg(feature = "log")]
-                        log::error!("Failed to build http_request: {_err}");
-                        return;
-                    }
-                };
-                #[cfg(feature = "log")]
-                log::info!("[{}]: {}", stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)), http_request.http_headers.path);
-                scope.execute(|| {
-                    match handle_connection(stream, http_request, &self.handlers) {
-                        Ok(_) => {},
+        {
+            let mut threadpool = scoped_threadpool::Pool::new(self.threads);
+            threadpool.scoped(|scope| {
+                // accepts connection
+                for stream in self.listener.incoming() {
+                    let mut stream = match stream {
+                        Ok(stream) => stream,
                         Err(_err) => {
                             #[cfg(feature = "log")]
-                            log::error!("Encountered error handling connection: {_err}");
-                        },
+                            log::error!("Failed to get stream: {_err}");
+                            continue;
+                        }
                     };
-                });
-            }
-            
-        });
+                    let http_request = match HttpRequest::from_stream(&mut stream) {
+                        Ok(http_request) => http_request,
+                        Err(_err) => {
+                            #[cfg(feature = "log")]
+                            log::error!("Failed to build http_request: {_err}");
+                            continue;
+                        }
+                    };
+                    #[cfg(feature = "log")]
+                    log::info!("[{}]: {}", stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)), http_request.http_headers.path);
+                    scope.execute(|| {
+                        match handle_connection(stream, http_request, &self.handlers) {
+                            Ok(_) => {},
+                            Err(_err) => {
+                                #[cfg(feature = "log")]
+                                log::error!("Encountered error handling connection: {_err}");
+                            },
+                        };
+                    });
+                }
+                
+            });
+        }
 
         #[cfg(not(feature = "threading"))]
         for stream in self.listener.incoming() {
@@ -90,7 +91,7 @@ impl HttpServer {
                 Err(_err) => {
                     #[cfg(feature = "log")]
                     log::error!("Failed to get stream: {_err}");
-                    break;
+                    continue;
                 }
             };
             let http_request = match HttpRequest::from_stream(&mut stream) {
@@ -98,7 +99,7 @@ impl HttpServer {
                 Err(_err) => {
                     #[cfg(feature = "log")]
                     log::error!("Failed to build http_request: {_err}");
-                    break;
+                    continue;
                 }
             };
             #[cfg(feature = "log")]
@@ -189,9 +190,11 @@ fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers:
         }
 
         if handler.0 == http_request.http_headers.method && path_matches {
-            found_handler = true;
             #[cfg(feature = "log")]
-            log::debug!("Using handler {} for {} from {}", handler.1, http_request.http_headers.path, stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)));
+            {
+                found_handler = true;
+                log::debug!("Using handler {} for {} from {}", handler.1, http_request.http_headers.path, stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)));
+            }
             handle_closure(&mut stream, http_request.clone(), &handler.2)?;
         }
     }

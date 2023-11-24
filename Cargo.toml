@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["log", "threading"]
+default = []
 log = ["dep:pretty_env_logger", "dep:log"]
 threading = ["dep:scoped_threadpool"]
 num_cpus = ["threading", "dep:num_cpus"]

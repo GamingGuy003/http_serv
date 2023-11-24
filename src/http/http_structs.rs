@@ -45,7 +45,7 @@ impl HttpRequest {
     pub fn get_extra_header(&self, header_name: String) -> Option<String> {
         for header in self.extra_headers.clone() {
             if header.0 == header_name {
-                return Some(header.0);
+                return Some(header.1);
             }
         }
         None
@@ -55,7 +55,7 @@ impl HttpRequest {
         if let Some(route_params) = self.route_params.clone() {
             for route_param in route_params {
                 if route_param.0 == param_name{
-                    return Some(route_param.0);
+                    return Some(route_param.1);
                 }
             }
         }
@@ -66,7 +66,7 @@ impl HttpRequest {
         if let Some(query_params) = self.query_params.clone() {
             for query_param in query_params {
                 if query_param.0 == param_name{
-                    return Some(query_param.0);
+                    return Some(query_param.1);
                 }
             }
         }
@@ -89,7 +89,7 @@ impl HttpRequest {
                 }
                 Err(err) => {
                     #[cfg(feature = "log")]
-                    log::error!("Failed to read headers");
+                    log::error!("Failed to read headers: {err}");
                     return Err(err);
                 }, // Error reading line
             }
@@ -170,7 +170,7 @@ impl HttpResponse {
         if let Some(extra_headers) = self.extra_headers.clone() {
             for header in extra_headers {
                 if header.0 == header_name {
-                    return Some(header.0);
+                    return Some(header.1);
                 }
             }
         }
