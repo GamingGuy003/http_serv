@@ -75,7 +75,7 @@ impl HttpServer {
 
                 if handler.0 == http_request.http_headers.method && path_matches {
                     #[cfg(feature = "log")]
-                    log::debug!("Handling {} for {} with {}", handler.1, stream.peer_addr().unwrap(), http_request.http_headers.path);
+                    log::info!("Handling {} for {} with {}", handler.1, stream.peer_addr().unwrap(), http_request.http_headers.path);
                     self.handle_closure(&mut stream, &http_request, &handler.2)?;
                 }
             }
