@@ -146,7 +146,14 @@ impl HttpRequest {
         // check if there is http data to be fetched
         for extra_header in &extra_headers {
             if let ("Content-Length", length) = extra_header {
-                let length = length.parse().expect("Failed to parse Content-Length");
+                let length = match length.parse() {
+                    Ok(length) => length,
+                    Err(_) => {
+                        #[cfg(feature = "log")]
+                        log::warn!("Failed to parse content length from {length}. Setting to 0 and ignoring body");
+                        continue;
+                    },
+                };
                 let mut buffer = vec![0; length];
                 match buf_reader.read_exact(&mut buffer) {
                     Ok(_) => _data = Some(HttpData::new(buffer)),
