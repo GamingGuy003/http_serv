@@ -7,6 +7,7 @@ extern crate pretty_env_logger;
 
 type HttpResponseFn = Box<dyn Fn(HttpRequest) -> HttpResponse + Send + Sync +'static>;
 
+/// Represents the http server
 pub struct HttpServer {
     listener: TcpListener,
     #[cfg(feature = "threading")]
@@ -16,6 +17,13 @@ pub struct HttpServer {
 }
 
 impl HttpServer {
+    /// Creates new instance of HttpServer
+    /// Examples:
+    /// ```rust
+    /// use http_serv::http::server::HttpServer;
+    /// 
+    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Vec::new());
+    /// ```
     #[cfg(not(feature = "threading"))]
     pub fn new(
         addr: String,
@@ -24,7 +32,19 @@ impl HttpServer {
     ) -> Result<Self, std::io::Error> {
         Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, handlers })
     }
-
+    /// Creates new instance of HttpServer
+    /// Examples:
+    /// ```rust
+    /// use http_serv::http::server::HttpServer;
+    /// 
+    /// // If num_cpus is enabled, threads can be set as the third arg. If no number is supplied, num_cpus will assume corecount * 3
+    /// #[cfg(feature = "num_cpus")]
+    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Some(10), Vec::new()).unwrap();
+    /// 
+    /// // If num_cpus is not enabled, thread count has to be specified
+    /// #[cfg(not(feature = "num_cpus"))]
+    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), 10, Vec::new()).unwrap();
+    /// ```
     #[cfg(feature = "threading")]
     pub fn new(
         addr: String,
@@ -44,7 +64,13 @@ impl HttpServer {
     }
 
 
-    // main server loop that handles incomming connections
+    /// Main server loop that handles incoming connections
+    /// ```ignore
+    /// use http_serv::http::server::HttpServer;
+    /// 
+    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Some(10), Vec::new()).unwrap();
+    /// server.run_loop().unwrap();
+    /// ```
     pub fn run_loop(&self) -> std::io::Result<()> {
         #[cfg(feature = "threading")]
         {
@@ -116,24 +142,76 @@ impl HttpServer {
         Ok(())
     }
 
+    /// Adds a get method handler to the server
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
+    /// 
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
+    /// // :tag in a path will be used as route parameter
+    /// server.get("/:uri".to_owned(), |request| {
+    ///     let mut resp = HttpResponse::default();
+    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     return resp;
+    /// });
+    /// ```
     pub fn get(&mut self, path: String, exec: fn(HttpRequest) -> HttpResponse) {
         #[cfg(feature = "log")]
         log::debug!("Adding GET {path}");
         self.handlers.push((HttpMethod::GET, path, Box::from(exec)));
     }
 
+    /// Adds a put method handler to the server
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
+    /// 
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
+    /// // :tag in a path will be used as route parameter
+    /// server.put("/:uri".to_owned(), |request| {
+    ///     let mut resp = HttpResponse::default();
+    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     return resp;
+    /// });
+    /// ```
     pub fn put(&mut self, path: String, exec: fn(HttpRequest) -> HttpResponse) {
         #[cfg(feature = "log")]
         log::debug!("Adding PUT {path}");
         self.handlers.push((HttpMethod::PUT, path, Box::from(exec)));
     }
 
+    /// Adds a post method handler to the server
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
+    /// 
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
+    /// // :tag in a path will be used as route parameter
+    /// server.post("/:uri".to_owned(), |request| {
+    ///     let mut resp = HttpResponse::default();
+    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     return resp;
+    /// });
+    /// ```
     pub fn post(&mut self, path: String, exec: fn(HttpRequest) -> HttpResponse) {
         #[cfg(feature = "log")]
         log::debug!("Adding POST {path}");
         self.handlers.push((HttpMethod::POST, path, Box::from(exec)));
     }
 
+    /// Adds a delete method handler to the server
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
+    /// 
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
+    /// // :tag in a path will be used as route parameter
+    /// server.delete("/:uri".to_owned(), |request| {
+    ///     let mut resp = HttpResponse::default();
+    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     return resp;
+    /// });
+    /// ```
     pub fn delete(&mut self, path: String, exec: fn(HttpRequest) -> HttpResponse) {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");

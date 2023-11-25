@@ -1,17 +1,35 @@
 use std::{net::TcpStream, io::{BufReader, BufRead, Read, Error}};
-
+/// HttpHeaders stores the HttpMethod, the Path and the Protocol used
 #[derive(Debug, Clone)]
 pub struct HttpHeaders {
+    /// Stores the http method
     pub method: HttpMethod,
+    /// Stores the requested path
     pub path: String,
+    /// Stores the protocol used
     pub protocol: String
 }
 
 impl HttpHeaders {
+    /// Creates new instance of HttpHeaders
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpHeaders, HttpMethod};
+    /// 
+    /// let headers = HttpHeaders::new(HttpMethod::GET, String::from("/"), String::from("1.1"));
+    /// ```
     pub fn new(method: HttpMethod, path: String, protocol: String) -> Self {
         Self { method, path, protocol }
     }
 
+    /// Creates new instance of HttpHeaders from String
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::http_structs::HttpHeaders;
+    /// 
+    /// let headers_raw = String::from("GET / HTTP/1.1");
+    /// let headers_parsed = HttpHeaders::from_line(headers_raw).unwrap();
+    /// ```
     pub fn from_line(headerline: String) -> Result<Self, String> {
         let mut methodline = headerline.split(' ').collect::<Vec<&str>>();
         // resolve elements from header line
@@ -51,20 +69,42 @@ impl HttpHeaders {
     }
 }
 
+/// HttpRequest stores the requests headers, request body, route and query parameters 
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
+    /// The http headers
     pub http_headers: HttpHeaders,
+    /// Extra headers like Content-Length etc.
     pub extra_headers: Vec<(String, String)>,
+    /// The http request's body as HttpData struct
     pub data: Option<HttpData>,
+    /// The http requests route parameters
     pub route_params: Option<Vec<(String, String)>>,
+    /// The http requests query parameters
     pub query_params: Option<Vec<(String, String)>>,
 }
 
 impl HttpRequest {
+    /// Creates new instance of HttpRequest
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpHeaders, HttpRequest};
+    /// 
+    /// let headers = HttpHeaders::from_line(String::from("GET / HTTP/1.1")).unwrap();
+    /// let request = HttpRequest::new(headers, Vec::new(), None, None, None);
+    /// ```
     pub fn new(http_headers: HttpHeaders, extra_headers: Vec<(String, String)>, data: Option<HttpData>, route_params: Option<Vec<(String, String)>>, query_params: Option<Vec<(String, String)>>) -> Self {
         Self { http_headers, extra_headers, data, route_params, query_params }
     }
 
+    /// Tries to fetch extra headers from request by key
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpHeaders, HttpRequest};
+    /// 
+    /// let headers = HttpHeaders::from_line(String::from("GET / HTTP/1.1")).unwrap();
+    /// let request = HttpRequest::new(headers, vec![(String::from("Content-Length"), String::from("5"))], None, None, None);
+    /// let content_length = request.get_extra_header(String::from("Content-Length")).unwrap();
+    /// ```
     pub fn get_extra_header(&self, header_name: String) -> Option<String> {
         for header in self.extra_headers.clone() {
             if header.0 == header_name {
@@ -74,6 +114,14 @@ impl HttpRequest {
         None
     }
 
+    /// Tries to fetch route parameter from called route
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpHeaders, HttpRequest};
+    /// 
+    /// let headers = HttpHeaders::from_line(String::from("GET /test/value HTTP/1.1")).unwrap();
+    /// let request = HttpRequest::new(headers, Vec::new(), None, Some(vec![(String::from(":var"), String::from("value"))]), None);
+    /// let var_value = request.get_route_param(String::from(":var")).unwrap();
+    /// ```
     pub fn get_route_param(&self, param_name: String) -> Option<String> {
         if let Some(route_params) = self.route_params.clone() {
             for route_param in route_params {
@@ -85,6 +133,14 @@ impl HttpRequest {
         None
     }
 
+    /// Tries to fetch query parameter from called route
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpHeaders, HttpRequest};
+    /// 
+    /// let headers = HttpHeaders::from_line(String::from("GET /test?var=value HTTP/1.1")).unwrap();
+    /// let request = HttpRequest::new(headers, Vec::new(), None, None, Some(vec![(String::from(":var"), String::from("value"))]));
+    /// let var_value = request.get_query_param(String::from(":var")).unwrap();
+    /// ```
     pub fn get_query_param(&self, param_name: String) -> Option<String> {
         if let Some(query_params) = self.query_params.clone() {
             for query_param in query_params {
@@ -96,6 +152,18 @@ impl HttpRequest {
         None
     }
 
+    /// Tries to create a HttpRequest from an incomming TcpStream
+    /// Example:
+    /// ```ignore
+    /// use std::net::{TcpListener, TcpStream};
+    /// use http_serv::http::http_structs::HttpRequest;
+    /// 
+    /// let listener = TcpListener::bind(format!("127.0.0.1:9999")).unwrap();
+    /// for stream in listener.incoming() {
+    ///     let mut stream = stream.unwrap();
+    ///     let request = HttpRequest::from_stream(&mut stream).unwrap();
+    /// }
+    /// ```
     pub fn from_stream(stream: &mut TcpStream) -> Result<Self, std::io::Error> {
         let mut buf_reader = BufReader::new(&*stream);
         let mut lines = Vec::new();
@@ -171,6 +239,17 @@ impl HttpRequest {
         }).collect::<Vec<(String, String)>>(), _data, None, None))
     }
 
+    /// Creates query params from string
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpHeaders, HttpRequest};
+    /// 
+    /// let query_string = String::from("/route?param1=val1&param2=val2");
+    /// let split = query_string.split_once('?').unwrap().1;
+    /// let headers = HttpHeaders::from_line(String::from("GET /test?var=value HTTP/1.1")).unwrap();
+    /// let mut request = HttpRequest::new(headers, Vec::new(), None, None, None);
+    /// request.query_params = Some(request.query_params_from_string(query_string));
+    /// ```
     pub fn query_params_from_string(&mut self, params: String) -> Vec<(String, String)>{
         let split = params.split('&').collect::<Vec<&str>>();
         let mut key_val = Vec::new();
@@ -187,11 +266,16 @@ impl HttpRequest {
     }
 }
 
+/// HttpResponse stores the http version, the status code (eg. 200 - OK), extra headers and eventual binary data
 #[derive(Debug)]
 pub struct HttpResponse {
+    /// Http version eg. 1.1
     pub http_ver: String,
+    /// Http status like OK, NotFound etc.
     pub status: HttpStatus,
+    /// Extra headers like Content-Length: 10
     pub extra_headers: Option<Vec<(String, String)>>,
+    /// Binary body data like images or files 
     pub data: Option<HttpData>
 }
 
@@ -202,11 +286,26 @@ impl Default for HttpResponse {
 }
 
 impl HttpResponse {
+    /// Creates new instance of HttpResponse
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpResponse, HttpStatus};
+    /// 
+    /// let response = HttpResponse::new(String::from("1.1"), HttpStatus::Ok, None, None);
+    /// ```
     pub fn new(http_ver: String, status: HttpStatus, extra_headers: Option<Vec<(String, String)>>, data: Option<HttpData>) -> Self {
         Self { http_ver, status, extra_headers, data }
     }
     
-    pub fn get_extra_headers(&self, header_name: String) -> Option<String> {
+    /// Tries to fetch extra header by key
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpResponse, HttpStatus};
+    /// 
+    /// let response = HttpResponse::new(String::from("1.1"), HttpStatus::Ok, Some(vec![(String::from("Content-Length"), String::from("5"))]), None);
+    /// let content_length = response.get_extra_header(String::from("Content-Length")).unwrap();
+    /// ```
+    pub fn get_extra_header(&self, header_name: String) -> Option<String> {
         if let Some(extra_headers) = self.extra_headers.clone() {
             for header in extra_headers {
                 if header.0 == header_name {
@@ -217,6 +316,13 @@ impl HttpResponse {
         None
     }
 
+    /// Creates a vec of lines which contain the http header, and extra headers. Autodetects eventual binary data present and sets content-length accordingly
+    /// ```rust
+    /// use http_serv::http::http_structs::{HttpResponse, HttpStatus};
+    /// 
+    /// let response = HttpResponse::new(String::from("1.1"), HttpStatus::Ok, Some(vec![(String::from("Content-Length"), String::from("5"))]), None);
+    /// let headers = response.to_headers();
+    /// ```
     pub fn to_headers(&self) -> Vec<String> {
         let mut headers = Vec::new();
         headers.push(format!("HTTP/{} {}", self.http_ver, self.status_to_header()));
@@ -303,93 +409,180 @@ impl HttpResponse {
     }
 }
 
+/// Represents supported http methods
 #[derive(Debug, PartialEq, Clone)]
 pub enum HttpMethod {
+    /// Post data to server
     POST,
+    /// Updated data on server
     PUT,
+    /// Fetch data from server
     GET,
+    /// Delete data from server
     DELETE
 }
 
+/// Represents http status codes with their keywords
 #[derive(Debug, num_enum::TryFromPrimitive)]
 #[repr(u64)]
 // Status codes + description from https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+/// Represents the status of an HTTP response.
 pub enum HttpStatus {
+    /// Continue processing request.
     Continue = 100,
+    /// Switching to new protocol.
     SwitchingProtocols = 101,
+    /// Processing, please wait.
     Processing = 102,
+    /// Early hints for the request.
     EarlyHints = 103,
+    /// Request succeeded.
     Ok = 200,
+    /// Resource created successfully.
     Created = 201,
+    /// Request accepted for processing.
     Accepted = 202,
+    /// Information not authoritative.
     NonAuthorativeInformation = 203,
+    /// No content to send for this request.
     NoContent = 204,
+    /// Reset content for this request.
     ResetContent = 205,
+    /// Partial content for this request.
     PartialContent = 206,
+    /// Multiple statuses for this request.
     MultiStatus = 207,
+    /// Already reported for this request.
     AlreadyReported = 208,
+    /// IM used for this request.
     IMUsed = 226,
+    /// Multiple choices for this request.
     MultipleChoices = 300,
+    /// Moved permanently to a new URL.
     MovedPermanently = 301,
+    /// Found, but further action required.
     Found = 302,
+    /// See other URL for this request.
     SeeOther = 303,
+    /// Not modified since last request.
     NotModified = 304,
+    /// Use proxy for this request.
     UseProxy = 305,
+    /// Unused status code.
     Unused = 306,
+    /// Temporary redirect to a new URL.
     TemporaryRedirect = 307,
+    /// Permanent redirect to a new URL.
     PermanentRedirect = 308,
+    /// Bad request syntax or unsupported method.
     BadRequest = 400,
+    /// Unauthorized request.
     Unauthorized = 401,
+    /// Payment required for this request.
     PaymentRequired = 402,
+    /// Forbidden request.
     Forbidden = 403,
+    /// Resource not found.
     NotFound = 404,
+    /// Method not supported for this resource.
     MethodNotAllowed = 405,
+    /// Request not acceptable.
     NotAcceptable = 406,
+    /// Proxy authentication required.
     ProxyAuthenticationRequired = 407,
+    /// Request timeout.
     RequestTimeout = 408,
+    /// Request conflict.
     Conflict = 409,
+    /// Resource is gone.
     Gone = 410,
+    /// Length required for this request.
     LengthRequired = 411,
+    /// Precondition failed for this request.
     PreconditionFailed = 412,
+    /// Payload too large for this request.
     PayloadTooLarge = 413,
+    /// URI too long for this request.
     URITooLong = 414,
+    /// Unsupported media type for this request.
     UnsupportedMediaType = 415,
+    /// Range not satisfiable for this request.
     RangeNotSatisfiable = 416,
+    /// Expectation failed for this request.
     ExpectationFailed = 417,
+    /// IM a teapot for this request.
     IMATeapot = 418,
+    /// Misdirected request.
     MisdirectedRequest = 421,
+    /// Unprocessable content for this request.
     UnprocessableContent = 422,
+    /// Locked for this request.
     Locked = 423,
+    /// Failed dependency for this request.
     FailedDependency = 424,
+    /// Too early for this request.
     TooEarly = 425,
+    /// Upgrade required for this request.
     UpgradeRequired = 426,
+    /// Precondition required for this request.
     PreconditionRequired = 428,
+    /// Too many requests for this user.
     TooManyRequests = 429,
+    /// Request header fields too large for this request.
     RequestsHeaderFieldsTooLarge = 431,
+    /// Unavailable for legal reasons for this request.
     UnavailableForLegalReasons = 451,
+    /// Internal server error.
     InternalServerError = 500,
+    /// Not implemented for this request.
     NotImplemented = 501,
+    /// Bad gateway for this request.
     BadGateway = 502,
+    /// Service unavailable for this request.
     ServiceUnavailable = 503,
+    /// Gateway timeout for this request.
     GatewayTimeout = 504,
+    /// HTTP version not supported for this request.
     HTTPVersionNotSupported = 505,
+    /// Variant also negotiates for this request.
     VariantAlsoNegotiates = 506,
+    /// Insufficient storage for this request.
     InsufficientStorage = 507,
+    /// Loop detected for this request.
     LoopDetected = 508,
+    /// Not extended for this request.
     NotExtended = 510,
+    /// Network authentication required for this request.
     NetworkAuthenticationRequired = 511,
- }
+  }  
 
+/// Represents binary data present in the body of a http request
 #[derive(Debug, Clone)]
 pub struct HttpData {
+    /// The data represented as a vector of bytes.
     pub data: Vec<u8>
 }
 
 impl HttpData {
+    /// Creates new instance of HttpData from a vec of bytes
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::http_structs::HttpData;
+    /// 
+    /// let http_data = HttpData::new(vec![b't', b'e', b's', b't']);
+    /// ```
     pub fn new(data: Vec<u8>) -> Self {
         Self { data }
     }
 
+    /// Fetches the length of the stored binary and sets the Content-Length header accordingly
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::http_structs::HttpData;
+    /// 
+    /// let http_data = HttpData::new(vec![b't', b'e', b's', b't']);
+    /// let header = http_data.to_header();
+    /// ```
     pub fn to_header(&self) -> String {
         format!("Content-Length: {}", self.data.len())
     }

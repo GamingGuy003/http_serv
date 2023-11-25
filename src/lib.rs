@@ -1,17 +1,23 @@
+/// The basic http module
 pub mod http;
 
+/// Test module
 #[cfg(test)]
 mod tests {
+    use std::process::{exit, abort};
+
     use crate::http::http_structs::{HttpResponse, HttpData, HttpStatus};
     use crate::http::http_structs::HttpStatus::{Ok, IMATeapot};
     use crate::http::server::HttpServer;
 
+    /// Tests formatting of basic headers
     #[test]
     pub fn response_headers() {
         let response = HttpResponse::new("2".to_string(), Ok, None, None);
         assert_eq!(response.to_headers().join("\r\n"), String::from("HTTP/2 200 OK\r\n\r\n"))
     }
 
+    /// Tests headers with payload
     #[test]
     pub fn response_headers_with_payload() {
         let data = HttpData::new(vec![b't', b'e', b's', b't']);
@@ -19,6 +25,7 @@ mod tests {
         assert_eq!(response.to_headers().join("\r\n"), String::from("HTTP/2 418 I'm a teapot\r\nContent-Length: 4\r\n\r\n"));
     }
 
+    /// Tests the server with incomming connections
     #[test]
     pub fn server_run() {
         #[cfg(feature = "log")]
@@ -42,7 +49,7 @@ mod tests {
         server.get("/_info/:uri".to_owned(), |request| {
             let mut resp = HttpResponse::default();
             resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
-            resp
+            exit(0)
         });
         let _ = server.run_loop();
     }
