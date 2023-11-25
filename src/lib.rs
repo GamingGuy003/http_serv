@@ -4,7 +4,7 @@ pub mod http;
 /// Test module
 #[cfg(test)]
 mod tests {
-    use std::process::{exit, abort};
+    use std::process::exit;
 
     use crate::http::http_structs::{HttpResponse, HttpData, HttpStatus};
     use crate::http::http_structs::HttpStatus::{Ok, IMATeapot};
