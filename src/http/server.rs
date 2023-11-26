@@ -174,7 +174,7 @@ impl HttpServer {
     ///     return resp;
     /// });
     /// ```
-    pub fn put(&mut self, path: String, exec: fn(HttpRequest) -> HttpResponse) {
+    pub fn put(&mut self, path: String, exec: impl Fn(HttpRequest) -> HttpResponse + Sync + Send + 'static) {
         #[cfg(feature = "log")]
         log::debug!("Adding PUT {path}");
         self.handlers.push((HttpMethod::PUT, path, Box::from(exec)));
@@ -193,7 +193,7 @@ impl HttpServer {
     ///     return resp;
     /// });
     /// ```
-    pub fn post(&mut self, path: String, exec: fn(HttpRequest) -> HttpResponse) {
+    pub fn post(&mut self, path: String, exec: impl Fn(HttpRequest) -> HttpResponse + Sync + Send + 'static) {
         #[cfg(feature = "log")]
         log::debug!("Adding POST {path}");
         self.handlers.push((HttpMethod::POST, path, Box::from(exec)));
@@ -212,7 +212,7 @@ impl HttpServer {
     ///     return resp;
     /// });
     /// ```
-    pub fn delete(&mut self, path: String, exec: fn(HttpRequest) -> HttpResponse) {
+    pub fn delete(&mut self, path: String, exec: impl Fn(HttpRequest) -> HttpResponse + Sync + Send + 'static) {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");
         self.handlers.push((HttpMethod::DELETE, path, Box::from(exec)));
