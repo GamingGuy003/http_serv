@@ -30,27 +30,27 @@ mod tests {
     pub fn server_run() {
         #[cfg(feature = "log")]
         pretty_env_logger::init_timed();
-        let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), 10, Vec::new()).unwrap();
-        server.get("/:uri".to_owned(), move |_| {
+        let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(),  Vec::new()).unwrap();
+        server.get("/:uri".to_owned(), Box::new(move |_| {
             std::thread::sleep(std::time::Duration::from_secs(15));
             let resp = HttpResponse::new("1.1".to_string(), HttpStatus::NotFound, Some(vec![("Location".to_owned(), "https://google.de".to_owned())]), None);
             resp
-        });
-        server.post("/_shorten/:uri".to_owned(), |request| {
+        }));
+        server.post("/_shorten/:uri".to_owned(), Box::new(|request| {
             let mut resp = HttpResponse::default();
             resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
             resp
-        });
-        server.delete("/_delete/:uri".to_owned(), |request| {
+        }));
+        server.delete("/_delete/:uri".to_owned(), Box::new(|request| {
             let mut resp = HttpResponse::default();
             resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
             resp
-        });
-        server.get("/_info/:uri".to_owned(), |request| {
+        }));
+        server.get("/_info/:uri".to_owned(),Box::new(|request| {
             let mut resp = HttpResponse::default();
             resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
             exit(0)
-        });
+        }));
         let _ = server.run_loop();
     }
 }
