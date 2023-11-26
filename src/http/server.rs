@@ -212,7 +212,7 @@ impl HttpServer {
     ///     return resp;
     /// }));
     /// ```
-    pub fn delete(&mut self, path: String, exec: HttpHandlerFn) {
+    pub fn delete(&mut self, path: String, exec: Box<dyn Fn(HttpRequest) -> HttpResponse + Send + Sync>) {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");
         self.handlers.push((HttpMethod::DELETE, path, exec));
