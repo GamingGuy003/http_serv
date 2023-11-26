@@ -161,62 +161,26 @@ impl HttpServer {
         self.handlers.push((HttpMethod::GET, path, exec));
     }
 
-    /// Adds a put method handler to the server
-    /// Example:
-    /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
-    /// 
-    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
-    /// // :tag in a path will be used as route parameter
-    /// server.put("/:uri".to_owned(), Box::new(|request| {
-    ///     let mut resp = HttpResponse::default();
-    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
-    ///     return resp;
-    /// }));
-    /// ```
-    pub fn put(&mut self, path: String, exec: HttpHandlerFn) {
-        #[cfg(feature = "log")]
-        log::debug!("Adding PUT {path}");
-        self.handlers.push((HttpMethod::PUT, path, exec));
-    }
-
-    /// Adds a post method handler to the server
-    /// Example:
-    /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
-    /// 
-    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
-    /// // :tag in a path will be used as route parameter
-    /// server.post("/:uri".to_owned(), Box::new(|request| {
-    ///     let mut resp = HttpResponse::default();
-    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
-    ///     return resp;
-    /// }));
-    /// ```
     pub fn post(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding POST {path}");
         self.handlers.push((HttpMethod::POST, path, exec));
-    }
-
-    /// Adds a delete method handler to the server
-    /// Example:
-    /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
-    /// 
-    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
-    /// // :tag in a path will be used as route parameter
-    /// server.delete("/:uri".to_owned(), Box::new(|request| {
-    ///     let mut resp = HttpResponse::default();
-    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
-    ///     return resp;
-    /// }));
-    /// ```
-    pub fn delete(&mut self, path: String, exec: Box<dyn Fn(HttpRequest) -> HttpResponse + Send + Sync>) {
+     }
+     
+     pub fn put(&mut self, path: String, exec: HttpHandlerFn) {
+        #[cfg(feature = "log")]
+        log::debug!("Adding PUT {path}");
+        self.handlers.push((HttpMethod::PUT, path, exec));
+     }
+     
+     pub fn delete(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");
         self.handlers.push((HttpMethod::DELETE, path, exec));
-    }
+     }
+     
+
+    
 
 }
 
