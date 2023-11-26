@@ -30,8 +30,8 @@ mod tests {
     pub fn server_run() {
         #[cfg(feature = "log")]
         pretty_env_logger::init_timed();
-        let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
-        server.get("/:uri".to_owned(), |_| {
+        let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), 10, Vec::new()).unwrap();
+        server.get("/:uri".to_owned(), move |_| {
             std::thread::sleep(std::time::Duration::from_secs(15));
             let resp = HttpResponse::new("1.1".to_string(), HttpStatus::NotFound, Some(vec![("Location".to_owned(), "https://google.de".to_owned())]), None);
             resp

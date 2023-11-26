@@ -5,7 +5,7 @@ use super::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 #[cfg(feature = "log")]
 extern crate pretty_env_logger;
 
-type HttpResponseFn = Box<dyn Fn(HttpRequest) -> HttpResponse + Send + Sync +'static>;
+type HttpResponseFn = Box<dyn Fn(HttpRequest) -> HttpResponse + Send + Sync>;
 
 /// Represents the http server
 pub struct HttpServer {
@@ -155,7 +155,7 @@ impl HttpServer {
     ///     return resp;
     /// });
     /// ```
-    pub fn get(&mut self, path: String, exec: fn(HttpRequest) -> HttpResponse) {
+    pub fn get(&mut self, path: String, exec: impl Fn(HttpRequest) -> HttpResponse + Sync + Send + 'static) {
         #[cfg(feature = "log")]
         log::debug!("Adding GET {path}");
         self.handlers.push((HttpMethod::GET, path, Box::from(exec)));
