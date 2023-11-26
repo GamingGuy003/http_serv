@@ -158,7 +158,7 @@ impl HttpServer {
     pub fn get(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding GET {path}");
-        self.handlers.push((HttpMethod::GET, path, Box::from(exec)));
+        self.handlers.push((HttpMethod::GET, path, exec));
     }
 
     /// Adds a put method handler to the server
@@ -177,7 +177,7 @@ impl HttpServer {
     pub fn put(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding PUT {path}");
-        self.handlers.push((HttpMethod::PUT, path, Box::from(exec)));
+        self.handlers.push((HttpMethod::PUT, path, exec));
     }
 
     /// Adds a post method handler to the server
@@ -196,7 +196,7 @@ impl HttpServer {
     pub fn post(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding POST {path}");
-        self.handlers.push((HttpMethod::POST, path, Box::from(exec)));
+        self.handlers.push((HttpMethod::POST, path, exec));
     }
 
     /// Adds a delete method handler to the server
@@ -215,7 +215,7 @@ impl HttpServer {
     pub fn delete(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");
-        self.handlers.push((HttpMethod::DELETE, path, Box::from(exec)));
+        self.handlers.push((HttpMethod::DELETE, path, exec));
     }
 
 }
