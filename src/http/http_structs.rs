@@ -1,4 +1,4 @@
-use std::{net::TcpStream, io::{BufReader, BufRead, Read, Error}};
+use std::{net::{TcpStream, SocketAddr}, io::{BufReader, BufRead, Read, Error}};
 /// HttpHeaders stores the HttpMethod, the Path and the Protocol used
 #[derive(Debug, Clone)]
 pub struct HttpHeaders {
@@ -72,6 +72,8 @@ impl HttpHeaders {
 /// HttpRequest stores the requests headers, request body, route and query parameters 
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
+    /// Client IP
+    pub client_ip: SocketAddr,
     /// The http headers
     pub http_headers: HttpHeaders,
     /// Extra headers like Content-Length etc.
@@ -91,10 +93,10 @@ impl HttpRequest {
     /// use http_serv::http::http_structs::{HttpHeaders, HttpRequest};
     /// 
     /// let headers = HttpHeaders::from_line(String::from("GET / HTTP/1.1")).unwrap();
-    /// let request = HttpRequest::new(headers, Vec::new(), None, None, None);
+    /// let request = HttpRequest::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080), headers, Vec::new(), None, None, None);
     /// ```
-    pub fn new(http_headers: HttpHeaders, extra_headers: Vec<(String, String)>, data: Option<HttpData>, route_params: Option<Vec<(String, String)>>, query_params: Option<Vec<(String, String)>>) -> Self {
-        Self { http_headers, extra_headers, data, route_params, query_params }
+    pub fn new(client_ip: SocketAddr, http_headers: HttpHeaders, extra_headers: Vec<(String, String)>, data: Option<HttpData>, route_params: Option<Vec<(String, String)>>, query_params: Option<Vec<(String, String)>>) -> Self {
+        Self { client_ip, http_headers, extra_headers, data, route_params, query_params }
     }
 
     /// Tries to fetch extra headers from request by key
@@ -167,6 +169,7 @@ impl HttpRequest {
     pub fn from_stream(stream: &mut TcpStream) -> Result<Self, std::io::Error> {
         let mut buf_reader = BufReader::new(&*stream);
         let mut lines = Vec::new();
+        let client_ip = stream.peer_addr()?;
         // read until no bytes are being read
         loop {
             let mut line = String::new();
@@ -234,7 +237,7 @@ impl HttpRequest {
             }
         }
 
-        Ok(Self::new(http_headers, extra_headers.iter().map(|(key, val)| {
+        Ok(Self::new(client_ip, http_headers, extra_headers.iter().map(|(key, val)| {
             (key.to_owned().to_owned(), val.to_owned().to_owned())
         }).collect::<Vec<(String, String)>>(), _data, None, None))
     }
