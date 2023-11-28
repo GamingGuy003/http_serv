@@ -14,6 +14,7 @@ pub struct HttpServer {
     threads: u32,
     // Method Path Closure
     handlers: Vec<(HttpMethod, String, HttpHandlerFn)>,
+    default_handler: HttpHandlerFn,
 }
 
 impl HttpServer {
@@ -22,15 +23,27 @@ impl HttpServer {
     /// ```rust
     /// use http_serv::http::server::HttpServer;
     /// 
-    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Vec::new());
+    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Vec::new(), None);
     /// ```
     #[cfg(not(feature = "threading"))]
     pub fn new(
         addr: String,
         port: String,
-        handlers: Vec<(HttpMethod, String, HttpHandlerFn)>
+        handlers: Vec<(HttpMethod, String, HttpHandlerFn)>,
+        default_handler: Option<HttpHandlerFn>
     ) -> Result<Self, std::io::Error> {
-        Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, handlers })
+        let default_handler_defined = match default_handler {
+            Some(default_handler_defined) => default_handler_defined,
+            None => Box::new(|_| {
+                HttpResponse::new(
+                    String::from("1.1"),
+                    super::http_structs::HttpStatus::NotImplemented,
+                    None,
+                    None
+                )
+            })
+        };
+        Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, handlers, default_handler: default_handler_defined })
     }
     /// Creates new instance of HttpServer
     /// Examples:
@@ -39,11 +52,11 @@ impl HttpServer {
     /// 
     /// // If num_cpus is enabled, threads can be set as the third arg. If no number is supplied, num_cpus will assume corecount * 3
     /// #[cfg(feature = "num_cpus")]
-    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Some(10), Vec::new()).unwrap();
+    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Some(10), Vec::new(), None).unwrap();
     /// 
     /// // If num_cpus is not enabled, thread count has to be specified
     /// #[cfg(not(feature = "num_cpus"))]
-    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), 10, Vec::new()).unwrap();
+    /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), 10, Vec::new(), None).unwrap();
     /// ```
     #[cfg(feature = "threading")]
     pub fn new(
@@ -53,14 +66,28 @@ impl HttpServer {
         threads: Option<u32>,
         #[cfg(not(feature = "num_cpus"))]
         threads: u32,
-        handlers: Vec<(HttpMethod, String, HttpHandlerFn)>
+        handlers: Vec<(HttpMethod, String, HttpHandlerFn)>,
+        default_handler: Option<HttpHandlerFn>
     ) -> Result<Self, std::io::Error> {
+        use std::default;
+
         #[cfg(feature = "num_cpus")]
         let threads = match threads {
             Some(threads) => threads,
             None => (num_cpus::get() as u32) * 3,
         };
-        Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, threads, handlers })
+        let default_handler_defined = match default_handler {
+            Some(default_handler_defined) => default_handler_defined,
+            None => Box::new(|request: HttpRequest| {
+                HttpResponse::new(
+                    String::from("1.1"),
+                    super::http_structs::HttpStatus::NotImplemented,
+                    None,
+                    None
+                )
+            })
+        };
+        Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, threads, handlers, default_handler: default_handler_defined })
     }
 
 
@@ -130,7 +157,7 @@ impl HttpServer {
             };
             #[cfg(feature = "log")]
             log::info!("[{}]: {}", stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)), http_request.http_headers.path);
-            match handle_connection(stream, http_request, &self.handlers) {
+            match handle_connection(stream, http_request, &self.handlers, &self.default_handler) {
                 Ok(_) => {},
                 Err(_err) => {
                     #[cfg(feature = "log")]
@@ -145,15 +172,15 @@ impl HttpServer {
     /// Adds a get method handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
     /// 
-    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.get("/:uri".to_owned(), |request| {
+    /// server.get("/:uri".to_owned(), Box::new(|request: HttpRequest| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
-    /// });
+    /// }));
     /// ```
     pub fn get(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
@@ -164,15 +191,15 @@ impl HttpServer {
     /// Adds a put method handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
     /// 
-    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.put("/:uri".to_owned(), |request| {
+    /// server.put("/:uri".to_owned(), Box::new(|request: HttpRequest| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
-    /// });
+    /// }));
     /// ```
     pub fn post(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
@@ -183,15 +210,15 @@ impl HttpServer {
     /// Adds a post method handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
     /// 
-    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.post("/:uri".to_owned(), |request| {
+    /// server.post("/:uri".to_owned(), Box::new(|request: HttpRequest| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
-    /// });
+    /// }));
     /// ```
     pub fn put(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
@@ -202,30 +229,42 @@ impl HttpServer {
     /// Adds a delete method handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpData}};
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
     /// 
-    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.delete("/:uri".to_owned(), |request| {
+    /// server.delete("/:uri".to_owned(), Box::new(|request: HttpRequest| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
-    /// });
+    /// }));
     /// ```
     pub fn delete(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");
         self.handlers.push((HttpMethod::DELETE, path, Box::new(exec)));
     }
-     
 
-    
-
+    /// Adds a default handler to the server
+    /// Example:
+    /// ```rust
+    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
+    /// 
+    /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
+    /// 
+    /// server.default(Box::new(|request: HttpRequest| {
+    ///     let mut resp = HttpResponse::default();
+    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     return resp;
+    /// }));
+    /// ```
+    pub fn default(&mut self, exec: HttpHandlerFn) {
+        self.default_handler = exec;
+    }
 }
 
-fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers: &Vec<(HttpMethod, String, HttpHandlerFn)>) -> std::io::Result<()> {
+fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers: &Vec<(HttpMethod, String, HttpHandlerFn)>, default_handler: &HttpHandlerFn) -> std::io::Result<()> {
     let mut http_request = http_request.clone();
-    #[cfg(feature = "log")]
     let mut found_handler = false;
     // checks which function to run
     for handler in handlers {
@@ -271,17 +310,18 @@ fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers:
         }
 
         if handler.0 == http_request.http_headers.method && path_matches {
+            found_handler = true;
             #[cfg(feature = "log")]
-            {
-                found_handler = true;
-                log::debug!("Using handler {} for {} from {}", handler.1, http_request.http_headers.path, stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)));
-            }
+            log::debug!("Using handler {} for {} from {}", handler.1, http_request.http_headers.path, stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)));
+            
             handle_closure(&mut stream, http_request.clone(), &handler.2)?;
         }
     }
-    #[cfg(feature = "log")]
     if !found_handler {
-        log::warn!("Could not find handler")
+        #[cfg(feature = "log")]
+        log::warn!("Could not find handler, using default");
+
+        handle_closure(&mut stream, http_request.clone(), default_handler)?;
     }
     Ok(())
 }
