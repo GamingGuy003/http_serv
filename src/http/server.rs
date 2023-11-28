@@ -5,7 +5,7 @@ use super::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 #[cfg(feature = "log")]
 extern crate pretty_env_logger;
 
-type HttpHandlerFn = Box<dyn (Fn(HttpRequest) -> HttpResponse) + Sync + Send +'static>;
+type HttpHandlerFn = Box<dyn Fn(HttpRequest) -> HttpResponse + Sync + Send +'static>;
 
 /// Represents the http server
 pub struct HttpServer {
@@ -149,16 +149,16 @@ impl HttpServer {
     /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.get("/:uri".to_owned(), Box::new(|request| {
+    /// server.get("/:uri".to_owned(), |request| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
-    /// }));
+    /// });
     /// ```
     pub fn get(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding GET {path}");
-        self.handlers.push((HttpMethod::GET, path, exec));
+        self.handlers.push((HttpMethod::GET, path, Box::new(exec)));
     }
 
     /// Adds a put method handler to the server
@@ -168,16 +168,16 @@ impl HttpServer {
     /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.put("/:uri".to_owned(), Box::new(|request| {
+    /// server.put("/:uri".to_owned(), |request| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
-    /// }));
+    /// });
     /// ```
     pub fn post(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding POST {path}");
-        self.handlers.push((HttpMethod::POST, path, exec));
+        self.handlers.push((HttpMethod::POST, path, Box::new(exec)));
     }
     
     /// Adds a post method handler to the server
@@ -187,16 +187,16 @@ impl HttpServer {
     /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.post("/:uri".to_owned(), Box::new(|request| {
+    /// server.post("/:uri".to_owned(), |request| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
-    /// }));
+    /// });
     /// ```
     pub fn put(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding PUT {path}");
-        self.handlers.push((HttpMethod::PUT, path, exec));
+        self.handlers.push((HttpMethod::PUT, path, Box::new(exec)));
     }
      
     /// Adds a delete method handler to the server
@@ -206,16 +206,16 @@ impl HttpServer {
     /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new()).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.delete("/:uri".to_owned(), Box::new(|request| {
+    /// server.delete("/:uri".to_owned(), |request| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
-    /// }));
+    /// });
     /// ```
     pub fn delete(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");
-        self.handlers.push((HttpMethod::DELETE, path, exec));
+        self.handlers.push((HttpMethod::DELETE, path, Box::new(exec)));
     }
      
 
