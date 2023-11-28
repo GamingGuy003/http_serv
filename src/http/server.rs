@@ -5,7 +5,7 @@ use super::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 #[cfg(feature = "log")]
 extern crate pretty_env_logger;
 
-type HttpHandlerFn = Box<dyn Fn(HttpRequest) -> HttpResponse + Sync + Send +'static>;
+type HttpHandlerFn = Box<dyn (Fn(HttpRequest) -> HttpResponse) + Sync + Send +'static>;
 
 /// Represents the http server
 pub struct HttpServer {
