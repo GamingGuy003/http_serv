@@ -1,6 +1,6 @@
 use std::{net::{TcpListener, TcpStream}, io::Write};
 
-use super::http_structs::{HttpMethod, HttpRequest, HttpResponse};
+use http_base::http::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 
 #[cfg(feature = "log")]
 extern crate pretty_env_logger;
@@ -37,7 +37,7 @@ impl HttpServer {
             None => Box::new(|_| {
                 HttpResponse::new(
                     String::from("1.1"),
-                    super::http_structs::HttpStatus::NotImplemented,
+                    http_base::http::http_structs::HttpStatus::NotImplemented,
                     None,
                     None
                 )

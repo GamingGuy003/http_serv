@@ -48,9 +48,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.14.2"
+version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f93e7192158dbcda357bdec5fb5788eebf8bbac027f3f33e719d29135ae84156"
+checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
 
 [[package]]
 name = "hermit-abi"
@@ -59,12 +59,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d77f7ec81a6d05a3abb01ab6eb7590f6083d08449fe5a1c8b1e620283546ccb7"
 
 [[package]]
+name = "http_base"
+version = "0.1.0"
+source = "git+https://github.com/GamingGuy003/http_base.git#37b2228136186dc0eb9d27c7eebb97fcff462433"
+dependencies = [
+ "log",
+ "num_enum",
+ "pretty_env_logger",
+]
+
+[[package]]
 name = "http_serv"
 version = "0.4.0"
 dependencies = [
+ "http_base",
  "log",
  "num_cpus",
- "num_enum",
  "pretty_env_logger",
  "scoped_threadpool",
 ]
@@ -172,9 +182,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.69"
+version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "134c189feb4956b20f6f547d2cf727d4c0fe06722b20a0eec87ed445a97f92da"
+checksum = "39278fbbf5fb4f646ce651690877f89d1c5811a3d4acb27700c1cb3cdb78fd3b"
 dependencies = [
  "unicode-ident",
 ]
