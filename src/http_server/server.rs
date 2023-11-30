@@ -69,8 +69,6 @@ impl HttpServer {
         handlers: Vec<(HttpMethod, String, HttpHandlerFn)>,
         default_handler: Option<HttpHandlerFn>
     ) -> Result<Self, std::io::Error> {
-        use std::default;
-
         #[cfg(feature = "num_cpus")]
         let threads = match threads {
             Some(threads) => threads,
@@ -78,10 +76,10 @@ impl HttpServer {
         };
         let default_handler_defined = match default_handler {
             Some(default_handler_defined) => default_handler_defined,
-            None => Box::new(|request: HttpRequest| {
+            None => Box::new(|_| {
                 HttpResponse::new(
                     String::from("1.1"),
-                    super::http_structs::HttpStatus::NotImplemented,
+                    http_base::http::http_structs::HttpStatus::NotImplemented,
                     None,
                     None
                 )
