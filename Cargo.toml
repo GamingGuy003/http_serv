@@ -10,6 +10,7 @@ default = []
 log = ["dep:pretty_env_logger", "dep:log", "http_base/log"]
 threading = ["dep:scoped_threadpool"]
 num_cpus = ["threading", "dep:num_cpus"]
+ssl = ["dep:rustls"]
 
 [dependencies]
 log = { version = "0.4.20", optional = true }
@@ -17,3 +18,4 @@ num_cpus = { version = "1.16.0", optional = true }
 pretty_env_logger = { version = "0.5.0", optional = true }
 scoped_threadpool = { version = "0.1.9", optional = true }
 http_base = { git = "https://github.com/GamingGuy003/http_base.git", branch = "main" }
+rustls = { version = "0.22.1", optional = true }
