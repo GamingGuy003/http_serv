@@ -332,6 +332,7 @@ fn handle_connection(
             if defined_section.starts_with(":") {
                 // handle treat the rest of the path as single param
                 if defined_section.ends_with("*") {
+                    println!("pushing {} as end", defined_section);
                     found_handler = true;
                     route_params.push((
                         defined_section.to_owned().to_owned(),
@@ -340,6 +341,7 @@ fn handle_connection(
                     break;
                 // handle single param
                 } else {
+                    println!("pushing {}", defined_section);
                     route_params.push((
                         defined_section.to_owned().to_owned(),
                         received_section.to_owned().to_owned(),
