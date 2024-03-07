@@ -329,12 +329,9 @@ fn handle_connection(
 
         for (received_section, defined_section) in received_parts.iter().zip(defined_parts.iter()) {
             idx_received += 1;
-            println!("defined: {defined_section}, received: {received_section}");
             if defined_section.starts_with(":") {
-                println!("found {defined_section}");
                 // handle treat the rest of the path as single param
                 if defined_section.ends_with("*") {
-                    println!("pushing {} as end", defined_section);
                     found_handler = true;
                     route_params.push((
                         defined_section.to_owned().to_owned(),
