@@ -207,10 +207,11 @@ impl HttpServer {
     ///     return resp;
     /// }));
     /// ```
-    pub fn get(&mut self, path: String, exec: HttpHandlerFn) {
+    pub fn get(&mut self, path: String, exec: HttpHandlerFn) -> &mut Self {
         #[cfg(feature = "log")]
         log::debug!("Adding GET {path}");
         self.handlers.push((HttpMethod::GET, path, Box::new(exec)));
+        self
     }
 
     /// Adds a put method handler to the server
@@ -226,10 +227,11 @@ impl HttpServer {
     ///     return resp;
     /// }));
     /// ```
-    pub fn post(&mut self, path: String, exec: HttpHandlerFn) {
+    pub fn post(&mut self, path: String, exec: HttpHandlerFn) -> &mut Self {
         #[cfg(feature = "log")]
         log::debug!("Adding POST {path}");
         self.handlers.push((HttpMethod::POST, path, Box::new(exec)));
+        self
     }
 
     /// Adds a post method handler to the server
@@ -245,10 +247,11 @@ impl HttpServer {
     ///     return resp;
     /// }));
     /// ```
-    pub fn put(&mut self, path: String, exec: HttpHandlerFn) {
+    pub fn put(&mut self, path: String, exec: HttpHandlerFn) -> &mut Self{
         #[cfg(feature = "log")]
         log::debug!("Adding PUT {path}");
         self.handlers.push((HttpMethod::PUT, path, Box::new(exec)));
+        self
     }
 
     /// Adds a delete method handler to the server
@@ -264,11 +267,12 @@ impl HttpServer {
     ///     return resp;
     /// }));
     /// ```
-    pub fn delete(&mut self, path: String, exec: HttpHandlerFn) {
+    pub fn delete(&mut self, path: String, exec: HttpHandlerFn) -> &mut Self {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");
         self.handlers
             .push((HttpMethod::DELETE, path, Box::new(exec)));
+        self
     }
 
     /// Adds a default handler to the server
@@ -284,8 +288,9 @@ impl HttpServer {
     ///     return resp;
     /// }));
     /// ```
-    pub fn default(&mut self, exec: HttpHandlerFn) {
+    pub fn default(&mut self, exec: HttpHandlerFn) -> &mut Self {
         self.default_handler = exec;
+        self
     }
 }
 
