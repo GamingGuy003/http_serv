@@ -329,16 +329,26 @@ fn handle_connection(
         request_path.retain(|x| !x.is_empty());
 
         // if different amount of elements, paths will never match anyways so we skip
-        if handler_path.len() != request_path.len() {
-            continue;
-        }
+        //if handler_path.len() != request_path.len() {
+        //    continue;
+        //}
+
+        let mut was_end = false;
 
         for (handler_element, request_element) in handler_path.iter().zip(request_path.iter()) {
+            if was_end {
+                route_params.push((
+                    handler_element.to_owned().to_owned(),
+                    request_element.to_owned().to_owned(),
+                ));
+                continue;
+            }
             if handler_element.starts_with(':') {
                 route_params.push((
                     handler_element.to_owned().to_owned(),
                     request_element.to_owned().to_owned(),
                 ));
+                handler_element.ends_with("*").then(|| was_end = true);
                 continue;
             }
             if handler_element != request_element {
