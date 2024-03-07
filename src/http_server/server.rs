@@ -304,7 +304,6 @@ fn handle_connection(
     let mut found_handler = false;
     // checks which function to run
     for handler in handlers {
-        let mut path_matches = true;
         let mut route_params = Vec::new();
         let split_path = http_request.http_headers.path.split_once('?');
 
@@ -333,6 +332,7 @@ fn handle_connection(
             if defined_section.starts_with(":") {
                 // handle treat the rest of the path as single param
                 if defined_section.ends_with("*") {
+                    found_handler = true;
                     route_params.push((
                         defined_section.to_owned().to_owned(),
                         format!("{received_section}/{}", received_parts[idx_received..].join("/"))
@@ -358,7 +358,7 @@ fn handle_connection(
             http_request.route_params = Some(route_params);
         }
 
-        if handler.0 == http_request.http_headers.method && path_matches {
+        if handler.0 == http_request.http_headers.method {
             found_handler = true;
             #[cfg(feature = "log")]
             log::debug!(
