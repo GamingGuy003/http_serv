@@ -323,13 +323,13 @@ fn handle_connection(
         http_request.query_params = query_params;
 
         // splits paths at /
-        let received_parts = handler.1.split("/").collect::<Vec<&str>>();
-        let defined_parts = route_params_unparsed.split("/").collect::<Vec<&str>>();
+        let received_parts = route_params_unparsed.split("/").collect::<Vec<&str>>();
+        let defined_parts = handler.1.split("/").collect::<Vec<&str>>();
         let mut idx_received = 0;
 
         for (received_section, defined_section) in received_parts.iter().zip(defined_parts.iter()) {
             idx_received += 1;
-            println!("bruh {defined_section}");
+            println!("defined: {defined_section}, received: {received_section}");
             if defined_section.starts_with(":") {
                 println!("found {defined_section}");
                 // handle treat the rest of the path as single param
