@@ -323,36 +323,32 @@ fn handle_connection(
 
         http_request.query_params = query_params;
 
-        let mut handler_path = handler.1.split('/').collect::<Vec<&str>>();
-        let mut request_path = route_params_unparsed.split('/').collect::<Vec<&str>>();
-        handler_path.retain(|x| !x.is_empty());
-        request_path.retain(|x| !x.is_empty());
+        // splits paths at /
+        let received_parts = handler.1.split("/").collect::<Vec<&str>>();
+        let defined_parts = route_params_unparsed.split("/").collect::<Vec<&str>>();
+        let mut idx_received = 0;
 
-        // if different amount of elements, paths will never match anyways so we skip
-        //if handler_path.len() != request_path.len() {
-        //    continue;
-        //}
-
-        let mut was_end = false;
-
-        for (handler_element, request_element) in handler_path.iter().zip(request_path.iter()) {
-            if was_end {
-                route_params.push((
-                    handler_element.to_owned().to_owned(),
-                    request_element.to_owned().to_owned(),
-                ));
+        for (received_section, defined_section) in received_parts.iter().zip(defined_parts.iter()) {
+            idx_received += 1;
+            if defined_section.starts_with(":") {
+                // handle treat the rest of the path as single param
+                if defined_section.ends_with("*") {
+                    route_params.push((
+                        defined_section.to_owned().to_owned(),
+                        format!("{received_section}/{}", received_parts[idx_received..].join("/"))
+                    ));
+                    break;
+                // handle single param
+                } else {
+                    route_params.push((
+                        defined_section.to_owned().to_owned(),
+                        received_section.to_owned().to_owned(),
+                    ));
+                }
                 continue;
             }
-            if handler_element.starts_with(':') {
-                route_params.push((
-                    handler_element.to_owned().to_owned(),
-                    request_element.to_owned().to_owned(),
-                ));
-                handler_element.ends_with("*").then(|| was_end = true);
-                continue;
-            }
-            if handler_element != request_element {
-                path_matches = false;
+            // does not match, break from inner loop
+            if received_section != defined_section {
                 break;
             }
         }
