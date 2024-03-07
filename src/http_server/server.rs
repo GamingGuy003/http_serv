@@ -329,7 +329,7 @@ fn handle_connection(
 
         for (received_section, defined_section) in received_parts.iter().zip(defined_parts.iter()) {
             idx_received += 1;
-            println!("bruh");
+            println!("bruh {defined_section}");
             if defined_section.starts_with(":") {
                 println!("found {defined_section}");
                 // handle treat the rest of the path as single param
