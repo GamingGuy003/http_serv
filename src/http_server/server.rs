@@ -1,11 +1,14 @@
-use std::{net::{TcpListener, TcpStream}, io::Write};
+use std::{
+    io::Write,
+    net::{TcpListener, TcpStream},
+};
 
 use http_base::http::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 
 #[cfg(feature = "log")]
 extern crate pretty_env_logger;
 
-type HttpHandlerFn = Box<dyn (Fn(HttpRequest) -> HttpResponse) + Sync + Send +'static>;
+type HttpHandlerFn = Box<dyn (Fn(HttpRequest) -> HttpResponse) + Sync + Send + 'static>;
 
 /// Represents the http server
 pub struct HttpServer {
@@ -22,7 +25,7 @@ impl HttpServer {
     /// Examples:
     /// ```rust
     /// use http_serv::http::server::HttpServer;
-    /// 
+    ///
     /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Vec::new(), None);
     /// ```
     #[cfg(not(feature = "threading"))]
@@ -30,7 +33,7 @@ impl HttpServer {
         addr: String,
         port: String,
         handlers: Vec<(HttpMethod, String, HttpHandlerFn)>,
-        default_handler: Option<HttpHandlerFn>
+        default_handler: Option<HttpHandlerFn>,
     ) -> Result<Self, std::io::Error> {
         let default_handler_defined = match default_handler {
             Some(default_handler_defined) => default_handler_defined,
@@ -39,21 +42,25 @@ impl HttpServer {
                     String::from("1.1"),
                     http_base::http::http_structs::HttpStatus::NotImplemented,
                     None,
-                    None
+                    None,
                 )
-            })
+            }),
         };
-        Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, handlers, default_handler: default_handler_defined })
+        Ok(Self {
+            listener: TcpListener::bind(format!("{addr}:{port}"))?,
+            handlers,
+            default_handler: default_handler_defined,
+        })
     }
     /// Creates new instance of HttpServer
     /// Examples:
     /// ```rust
     /// use http_serv::http::server::HttpServer;
-    /// 
+    ///
     /// // If num_cpus is enabled, threads can be set as the third arg. If no number is supplied, num_cpus will assume corecount * 3
     /// #[cfg(feature = "num_cpus")]
     /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Some(10), Vec::new(), None).unwrap();
-    /// 
+    ///
     /// // If num_cpus is not enabled, thread count has to be specified
     /// #[cfg(not(feature = "num_cpus"))]
     /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), 10, Vec::new(), None).unwrap();
@@ -62,12 +69,10 @@ impl HttpServer {
     pub fn new(
         addr: String,
         port: String,
-        #[cfg(feature = "num_cpus")]
-        threads: Option<u32>,
-        #[cfg(not(feature = "num_cpus"))]
-        threads: u32,
+        #[cfg(feature = "num_cpus")] threads: Option<u32>,
+        #[cfg(not(feature = "num_cpus"))] threads: u32,
         handlers: Vec<(HttpMethod, String, HttpHandlerFn)>,
-        default_handler: Option<HttpHandlerFn>
+        default_handler: Option<HttpHandlerFn>,
     ) -> Result<Self, std::io::Error> {
         #[cfg(feature = "num_cpus")]
         let threads = match threads {
@@ -81,18 +86,22 @@ impl HttpServer {
                     String::from("1.1"),
                     http_base::http::http_structs::HttpStatus::NotImplemented,
                     None,
-                    None
+                    None,
                 )
-            })
+            }),
         };
-        Ok(Self { listener: TcpListener::bind(format!("{addr}:{port}"))?, threads, handlers, default_handler: default_handler_defined })
+        Ok(Self {
+            listener: TcpListener::bind(format!("{addr}:{port}"))?,
+            threads,
+            handlers,
+            default_handler: default_handler_defined,
+        })
     }
-
 
     /// Main server loop that handles incoming connections
     /// ```ignore
     /// use http_serv::http::server::HttpServer;
-    /// 
+    ///
     /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Some(10), Vec::new()).unwrap();
     /// server.run_loop().unwrap();
     /// ```
@@ -120,18 +129,29 @@ impl HttpServer {
                         }
                     };
                     #[cfg(feature = "log")]
-                    log::info!("[{}]: {}", stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)), http_request.http_headers.path);
+                    log::info!(
+                        "[{}]: {}",
+                        stream.peer_addr().unwrap_or(std::net::SocketAddr::new(
+                            std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
+                            0000
+                        )),
+                        http_request.http_headers.path
+                    );
                     scope.execute(|| {
-                        match handle_connection(stream, http_request, &self.handlers, &self.default_handler) {
-                            Ok(_) => {},
+                        match handle_connection(
+                            stream,
+                            http_request,
+                            &self.handlers,
+                            &self.default_handler,
+                        ) {
+                            Ok(_) => {}
                             Err(_err) => {
                                 #[cfg(feature = "log")]
                                 log::error!("Encountered error handling connection: {_err}");
-                            },
+                            }
                         };
                     });
                 }
-                
             });
         }
 
@@ -154,13 +174,20 @@ impl HttpServer {
                 }
             };
             #[cfg(feature = "log")]
-            log::info!("[{}]: {}", stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)), http_request.http_headers.path);
+            log::info!(
+                "[{}]: {}",
+                stream.peer_addr().unwrap_or(std::net::SocketAddr::new(
+                    std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
+                    0000
+                )),
+                http_request.http_headers.path
+            );
             match handle_connection(stream, http_request, &self.handlers, &self.default_handler) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(_err) => {
                     #[cfg(feature = "log")]
                     log::error!("Encountered error handling connection: {_err}");
-                },
+                }
             };
         }
 
@@ -171,7 +198,7 @@ impl HttpServer {
     /// Example:
     /// ```rust
     /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    /// 
+    ///
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
     /// server.get("/:uri".to_owned(), Box::new(|request: HttpRequest| {
@@ -190,7 +217,7 @@ impl HttpServer {
     /// Example:
     /// ```rust
     /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    /// 
+    ///
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
     /// server.put("/:uri".to_owned(), Box::new(|request: HttpRequest| {
@@ -204,12 +231,12 @@ impl HttpServer {
         log::debug!("Adding POST {path}");
         self.handlers.push((HttpMethod::POST, path, Box::new(exec)));
     }
-    
+
     /// Adds a post method handler to the server
     /// Example:
     /// ```rust
     /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    /// 
+    ///
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
     /// server.post("/:uri".to_owned(), Box::new(|request: HttpRequest| {
@@ -223,12 +250,12 @@ impl HttpServer {
         log::debug!("Adding PUT {path}");
         self.handlers.push((HttpMethod::PUT, path, Box::new(exec)));
     }
-     
+
     /// Adds a delete method handler to the server
     /// Example:
     /// ```rust
     /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    /// 
+    ///
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
     /// server.delete("/:uri".to_owned(), Box::new(|request: HttpRequest| {
@@ -240,16 +267,17 @@ impl HttpServer {
     pub fn delete(&mut self, path: String, exec: HttpHandlerFn) {
         #[cfg(feature = "log")]
         log::debug!("Adding DELETE {path}");
-        self.handlers.push((HttpMethod::DELETE, path, Box::new(exec)));
+        self.handlers
+            .push((HttpMethod::DELETE, path, Box::new(exec)));
     }
 
     /// Adds a default handler to the server
     /// Example:
     /// ```rust
     /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    /// 
+    ///
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
-    /// 
+    ///
     /// server.default(Box::new(|request: HttpRequest| {
     ///     let mut resp = HttpResponse::default();
     ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
@@ -261,7 +289,12 @@ impl HttpServer {
     }
 }
 
-fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers: &Vec<(HttpMethod, String, HttpHandlerFn)>, default_handler: &HttpHandlerFn) -> std::io::Result<()> {
+fn handle_connection(
+    mut stream: TcpStream,
+    http_request: HttpRequest,
+    handlers: &Vec<(HttpMethod, String, HttpHandlerFn)>,
+    default_handler: &HttpHandlerFn,
+) -> std::io::Result<()> {
     let mut http_request = http_request.clone();
     let mut found_handler = false;
     // checks which function to run
@@ -271,13 +304,17 @@ fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers:
         let split_path = http_request.http_headers.path.split_once('?');
 
         // split route and query params and parse query
-        let (route_params_unparsed, query_params): (String, Option<Vec<(String, String)>>) = match split_path {
-            Some((rpu, qpu)) => {
-                // parse query params
-                (rpu.to_owned(), Some(http_request.query_params_from_string(qpu.to_owned())))
-            }
-            None => (http_request.http_headers.path.clone(), None),
-        };
+        let (route_params_unparsed, query_params): (String, Option<Vec<(String, String)>>) =
+            match split_path {
+                Some((rpu, qpu)) => {
+                    // parse query params
+                    (
+                        rpu.to_owned(),
+                        Some(http_request.query_params_from_string(qpu.to_owned())),
+                    )
+                }
+                None => (http_request.http_headers.path.clone(), None),
+            };
 
         http_request.query_params = query_params;
 
@@ -293,7 +330,10 @@ fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers:
 
         for (handler_element, request_element) in handler_path.iter().zip(request_path.iter()) {
             if handler_element.starts_with(':') {
-                route_params.push((handler_element.to_owned().to_owned(), request_element.to_owned().to_owned()));
+                route_params.push((
+                    handler_element.to_owned().to_owned(),
+                    request_element.to_owned().to_owned(),
+                ));
                 continue;
             }
             if handler_element != request_element {
@@ -310,8 +350,16 @@ fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers:
         if handler.0 == http_request.http_headers.method && path_matches {
             found_handler = true;
             #[cfg(feature = "log")]
-            log::debug!("Using handler {} for {} from {}", handler.1, http_request.http_headers.path, stream.peer_addr().unwrap_or(std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)), 0000)));
-            
+            log::debug!(
+                "Using handler {} for {} from {}",
+                handler.1,
+                http_request.http_headers.path,
+                stream.peer_addr().unwrap_or(std::net::SocketAddr::new(
+                    std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
+                    0000
+                ))
+            );
+
             handle_closure(&mut stream, http_request.clone(), &handler.2)?;
         }
     }
@@ -324,7 +372,11 @@ fn handle_connection(mut stream: TcpStream, http_request: HttpRequest, handlers:
     Ok(())
 }
 
-fn handle_closure(stream: &mut TcpStream, request: HttpRequest, exec: &HttpHandlerFn) -> std::io::Result<()> {
+fn handle_closure(
+    stream: &mut TcpStream,
+    request: HttpRequest,
+    exec: &HttpHandlerFn,
+) -> std::io::Result<()> {
     let response = exec(request);
     stream.write_all(response.to_headers().join("\r\n").as_bytes())?;
     match response.data {
