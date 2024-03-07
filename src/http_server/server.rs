@@ -1,6 +1,6 @@
 use std::{net::{TcpListener, TcpStream}, io::Write};
 
-pub use http_base::http::http_structs::{HttpMethod, HttpRequest, HttpResponse};
+use http_base::http::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 
 #[cfg(feature = "log")]
 extern crate pretty_env_logger;
