@@ -333,14 +333,14 @@ fn handle_connection(
                 // handle treat the rest of the path as single param
                 if defined_section.ends_with("*") {
                     found_handler = true;
+                    let paramcontent = format!("{received_section}/{}", received_parts[idx_received..].join("/"));
                     route_params.push((
                         defined_section.to_owned().to_owned(),
-                        format!("{received_section}/{}", received_parts[idx_received..].join("/"))
+                        paramcontent.trim_end_matches("/").to_owned()
                     ));
                     break;
                 // handle single param
                 } else {
-                    println!("pushing {}", defined_section);
                     route_params.push((
                         defined_section.to_owned().to_owned(),
                         received_section.to_owned().to_owned(),
