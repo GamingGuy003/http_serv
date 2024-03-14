@@ -201,7 +201,7 @@ dependencies = [
 [[package]]
 name = "http_base"
 version = "0.1.0"
-source = "git+https://github.com/GamingGuy003/http_base.git?branch=streamdata#59b4b0ad36373f6af6fff2f3f8e2e53b1595c8b2"
+source = "git+https://github.com/GamingGuy003/http_base.git#f3ecc32bb9a3162165010dc7fe879fd26ffc3b2f"
 dependencies = [
  "dyn-clone",
  "log",
