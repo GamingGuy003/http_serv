@@ -24,8 +24,8 @@ impl HttpServer {
     /// Creates new instance of HttpServer
     /// Examples:
     /// ```rust
-    /// use http_serv::http::server::HttpServer;
-    ///
+    /// use http_serv::http_server::server::HttpServer;
+    /// 
     /// let server = HttpServer::new(String::from("127.0.0.1"), String::from("8443"), Vec::new(), None);
     /// ```
     #[cfg(not(feature = "threading"))]
@@ -197,13 +197,13 @@ impl HttpServer {
     /// Adds a get method handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    ///
+    /// use http_serv::{HttpData, HttpResponse, HttpRequest, http_server::server::HttpServer};
+    /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.get("/:uri".to_owned(), Box::new(|request: HttpRequest| {
+    /// server.get("/:uri".to_owned(), Box::new(|request: &HttpRequest| {
     ///     let mut resp = HttpResponse::default();
-    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     resp.data = Some(HttpData::Bytes(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
     /// }));
     /// ```
@@ -217,13 +217,13 @@ impl HttpServer {
     /// Adds a put method handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    ///
+    /// use http_serv::{HttpData, HttpResponse, HttpRequest, http_server::server::HttpServer};
+    /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.put("/:uri".to_owned(), Box::new(|request: HttpRequest| {
+    /// server.put("/:uri".to_owned(), Box::new(|request: &HttpRequest| {
     ///     let mut resp = HttpResponse::default();
-    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     resp.data = Some(HttpData::Bytes(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
     /// }));
     /// ```
@@ -237,13 +237,13 @@ impl HttpServer {
     /// Adds a post method handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    ///
+    /// use http_serv::{HttpData, HttpResponse, HttpRequest, http_server::server::HttpServer};
+    /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.post("/:uri".to_owned(), Box::new(|request: HttpRequest| {
+    /// server.post("/:uri".to_owned(), Box::new(|request: &HttpRequest| {
     ///     let mut resp = HttpResponse::default();
-    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     resp.data = Some(HttpData::Bytes(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
     /// }));
     /// ```
@@ -257,13 +257,13 @@ impl HttpServer {
     /// Adds a delete method handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    ///
+    /// use http_serv::{HttpData, HttpResponse, HttpRequest, http_server::server::HttpServer};
+    /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     /// // :tag in a path will be used as route parameter
-    /// server.delete("/:uri".to_owned(), Box::new(|request: HttpRequest| {
+    /// server.delete("/:uri".to_owned(), Box::new(|request: &HttpRequest| {
     ///     let mut resp = HttpResponse::default();
-    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     resp.data = Some(HttpData::Bytes(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
     /// }));
     /// ```
@@ -278,13 +278,13 @@ impl HttpServer {
     /// Adds a default handler to the server
     /// Example:
     /// ```rust
-    /// use http_serv::http::{server::HttpServer, http_structs::{HttpResponse, HttpRequest, HttpData}};
-    ///
+    /// use http_serv::{HttpData, HttpResponse, HttpRequest, http_server::server::HttpServer};
+    /// 
     /// let mut server = HttpServer::new("0.0.0.0".to_string(), "8443".to_string(), Vec::new(), None).unwrap();
     ///
-    /// server.default(Box::new(|request: HttpRequest| {
+    /// server.default(Box::new(|request: &HttpRequest| {
     ///     let mut resp = HttpResponse::default();
-    ///     resp.data = Some(HttpData::new(format!("{:#?}", request).as_bytes().to_vec()));
+    ///     resp.data = Some(HttpData::Bytes(format!("{:#?}", request).as_bytes().to_vec()));
     ///     return resp;
     /// }));
     /// ```
