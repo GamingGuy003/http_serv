@@ -323,23 +323,19 @@ fn handle_connection(
         http_request.query_params = query_params;
 
         // splits paths at /
-        let received_parts = route_params_unparsed.split("/").collect::<Vec<&str>>();
-        let defined_parts = handler.1.split("/").collect::<Vec<&str>>();
-        let mut idx_received = 0;
+        let received_parts = route_params_unparsed.split('/').collect::<Vec<&str>>();
+        let defined_parts = handler.1.split('/').collect::<Vec<&str>>();
 
-        for (received_section, defined_section) in received_parts.iter().zip(defined_parts.iter()) {
-            idx_received += 1;
-            if defined_section.starts_with(":") {
+        for (idx_received, (received_section, defined_section)) in received_parts.iter().zip(defined_parts.iter()).enumerate() {
+            if defined_section.starts_with(':') {
                 // handle treat the rest of the path as single param
-                if defined_section.ends_with("*") {
+                if defined_section.ends_with('*') {
                     found_handler = true;
-                    let paramcontent = format!(
-                        "{received_section}/{}",
-                        received_parts[idx_received..].join("/")
-                    );
+                    let paramcontent = received_parts[idx_received..].join("/");
                     route_params.push((
                         defined_section.to_owned().to_owned(),
-                        paramcontent.trim_end_matches("/").to_owned(),
+                        paramcontent
+                        //paramcontent.trim_end_matches('/').to_owned(),
                     ));
                     break;
                 // handle single param
