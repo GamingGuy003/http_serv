@@ -1,5 +1,5 @@
 use std::{
-    io::Write,
+    io::{self, Write},
     net::{TcpListener, TcpStream},
 };
 
@@ -8,7 +8,7 @@ use http_base::http::http_structs::{HttpMethod, HttpRequest, HttpResponse};
 #[cfg(feature = "log")]
 extern crate pretty_env_logger;
 
-type HttpHandlerFn = Box<dyn (Fn(HttpRequest) -> HttpResponse) + Sync + Send + 'static>;
+type HttpHandlerFn = Box<dyn (Fn(&HttpRequest) -> HttpResponse) + Sync + Send + 'static>;
 
 /// Represents the http server
 pub struct HttpServer {
@@ -37,7 +37,7 @@ impl HttpServer {
     ) -> Result<Self, std::io::Error> {
         let default_handler_defined = match default_handler {
             Some(default_handler_defined) => default_handler_defined,
-            None => Box::new(|_| {
+            None => Box::new(|_: &_| {
                 HttpResponse::new(
                     String::from("1.1"),
                     http_base::http::http_structs::HttpStatus::NotImplemented,
@@ -247,7 +247,7 @@ impl HttpServer {
     ///     return resp;
     /// }));
     /// ```
-    pub fn put(&mut self, path: String, exec: HttpHandlerFn) -> &mut Self{
+    pub fn put(&mut self, path: String, exec: HttpHandlerFn) -> &mut Self {
         #[cfg(feature = "log")]
         log::debug!("Adding PUT {path}");
         self.handlers.push((HttpMethod::PUT, path, Box::new(exec)));
@@ -296,11 +296,11 @@ impl HttpServer {
 
 fn handle_connection(
     mut stream: TcpStream,
-    http_request: HttpRequest,
+    mut http_request: HttpRequest,
     handlers: &Vec<(HttpMethod, String, HttpHandlerFn)>,
     default_handler: &HttpHandlerFn,
 ) -> std::io::Result<()> {
-    let mut http_request = http_request.clone();
+    //let mut http_request = http_request.clone();
     let mut found_handler = false;
     // checks which function to run
     for handler in handlers {
@@ -333,10 +333,13 @@ fn handle_connection(
                 // handle treat the rest of the path as single param
                 if defined_section.ends_with("*") {
                     found_handler = true;
-                    let paramcontent = format!("{received_section}/{}", received_parts[idx_received..].join("/"));
+                    let paramcontent = format!(
+                        "{received_section}/{}",
+                        received_parts[idx_received..].join("/")
+                    );
                     route_params.push((
                         defined_section.to_owned().to_owned(),
-                        paramcontent.trim_end_matches("/").to_owned()
+                        paramcontent.trim_end_matches("/").to_owned(),
                     ));
                     break;
                 // handle single param
@@ -372,27 +375,35 @@ fn handle_connection(
                 ))
             );
 
-            handle_closure(&mut stream, http_request.clone(), &handler.2)?;
+            handle_closure(&mut stream, &http_request, &handler.2)?;
         }
     }
     if !found_handler {
         #[cfg(feature = "log")]
         log::warn!("Could not find handler, using default");
 
-        handle_closure(&mut stream, http_request.clone(), default_handler)?;
+        handle_closure(&mut stream, &http_request, default_handler)?;
     }
     Ok(())
 }
 
 fn handle_closure(
     stream: &mut TcpStream,
-    request: HttpRequest,
+    request: &HttpRequest,
     exec: &HttpHandlerFn,
 ) -> std::io::Result<()> {
     let response = exec(request);
     stream.write_all(response.to_headers().join("\r\n").as_bytes())?;
     match response.data {
-        Some(data) => stream.write_all(&data.data),
+        Some(data) => match data {
+            http_base::http::http_structs::HttpData::Bytes(vec) => stream.write_all(&vec),
+            http_base::http::http_structs::HttpData::Stream(mut read) => {
+                match io::copy(&mut read.0, stream) {
+                    Ok(_) => Ok(()),
+                    Err(err) => Err(err),
+                }
+            }
+        },
         None => Ok(()),
     }
 }
