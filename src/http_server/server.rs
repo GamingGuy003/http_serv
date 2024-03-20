@@ -175,11 +175,12 @@ impl HttpServer {
             };
             #[cfg(feature = "log")]
             log::info!(
-                "[{}]: {}",
+                "[{}]: {:?} {}",
                 stream.peer_addr().unwrap_or(std::net::SocketAddr::new(
                     std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
                     0000
                 )),
+                http_request.http_headers.method,
                 http_request.http_headers.path
             );
             match handle_connection(stream, http_request, &self.handlers, &self.default_handler) {
