@@ -175,7 +175,7 @@ impl HttpServer {
             };
             #[cfg(feature = "log")]
             log::info!(
-                "[{}]: {:?} {}",
+                "t[{}]: {:?} {}",
                 stream.peer_addr().unwrap_or(std::net::SocketAddr::new(
                     std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
                     0000
