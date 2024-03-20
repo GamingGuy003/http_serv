@@ -81,7 +81,7 @@ impl HttpServer {
         };
         let default_handler_defined = match default_handler {
             Some(default_handler_defined) => default_handler_defined,
-            None => Box::new(|_| {
+            None => Box::new(|_: &_| {
                 HttpResponse::new(
                     String::from("1.1"),
                     http_base::http::http_structs::HttpStatus::NotImplemented,
